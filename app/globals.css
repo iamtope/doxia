@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300;
+}
+
+::selection {
+  @apply bg-[#0052CC]/20 text-slate-900;
+}
+
+@layer utilities {
+  .bg-grid {
+    background-size: 32px 32px;
+    background-image:
+      linear-gradient(to right, theme('colors.slate.200') 1px, transparent 1px),
+      linear-gradient(to bottom, theme('colors.slate.200') 1px, transparent 1px);
+  }
+
+  .bg-grid-dark {
+    background-size: 32px 32px;
+    background-image:
+      linear-gradient(to right, theme('colors.slate.800') 1px, transparent 1px),
+      linear-gradient(to bottom, theme('colors.slate.800') 1px, transparent 1px);
+  }
+
+  .glass {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/60 dark:border-slate-800/60 shadow-xl;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200/70 dark:border-slate-800/70 bg-white/60 dark:bg-slate-900/60 backdrop-blur;
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 shadow-xl;
+  }
+}
+
