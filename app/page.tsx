@@ -2,103 +2,61 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { MicrophoneIcon, SparklesIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
-import SignupModal from './components/SignupModal'
+
+import DashboardPreview from './components/DashboardPreview'
 
 export default function Home() {
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false)
 
   return (
     <>
       <Navbar />
       <main>
         {/* Hero Section */}
-        <section className="relative overflow-hidden py-24 px-4 bg-gradient-to-b from-white via-slate-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <section className="relative overflow-hidden pt-24 pb-12 px-4 bg-gradient-to-b from-white via-slate-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -left-10 -top-24 h-72 w-72 bg-[#0052CC]/20 blur-3xl rounded-full" />
             <div className="absolute right-0 top-10 h-96 w-96 bg-indigo-400/10 blur-3xl rounded-full" />
             <div className="absolute inset-0 bg-grid dark:bg-grid-dark opacity-40" />
           </div>
-          <div className="max-w-7xl mx-auto relative grid lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-7xl mx-auto relative text-center space-y-8">
             <motion.div
-              className="space-y-6"
+              className="space-y-6 max-w-4xl mx-auto"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
             >
-              <div className="pill w-fit">
+              <div className="pill w-fit mx-auto">
                 <SparklesIcon className="h-4 w-4 text-[#0052CC]" />
-                <span className="text-slate-500">HIPAA Compliant</span>
+                <span className="text-slate-500">HIPAA & GDPR Compliant</span>
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 <span className="text-slate-700 dark:text-slate-200 font-semibold">Ambient AI Scribe</span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
-                Medical notes that feel like Apple-level magic.
+              <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
+                Medical notes that feel like <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0052CC] to-indigo-500">Apple-level magic.</span>
               </h1>
-              <p className="text-xl text-slate-600 dark:text-slate-300 leading-relaxed">
-                Transform patient conversations into structured SOAP notes instantly. Save 2 hours of charting every day and deliver patient-first care without the paperwork drag.
+              <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto">
+                Transform patient conversations into structured SOAP notes instantly. Save 2 hours of charting every day and deliver patient-first care.
               </p>
-              <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
-                <button
-                  onClick={() => setIsSignupModalOpen(true)}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                <Link
+                  href="/signup"
                   className="bg-gradient-to-r from-[#0052CC] to-indigo-500 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-[0_20px_60px_-25px_rgba(0,82,204,0.7)] hover:shadow-[0_25px_70px_-30px_rgba(0,82,204,0.8)] transition-all duration-300 hover:-translate-y-0.5"
                 >
                   Get Lifetime Access - $4.99
-                </button>
+                </Link>
                 <span className="text-slate-500 dark:text-slate-400 text-sm">
                   Zero subscriptions. Lifetime updates.
                 </span>
               </div>
             </motion.div>
 
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.35 }}
-              transition={{ duration: 0.65, ease: 'easeOut', delay: 0.05 }}
-            >
-              <div className="absolute -inset-6 bg-white/30 dark:bg-slate-900/30 backdrop-blur-3xl rounded-3xl" />
-              <div className="relative glass rounded-3xl p-6 shadow-2xl border border-white/50 dark:border-slate-800/50">
-                <div className="flex items-center justify-between pb-4 border-b border-white/60 dark:border-slate-800/60">
-                  <div className="pill">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Live Encounter</span>
-                  </div>
-                  <span className="text-sm text-slate-500">00:14:23</span>
-                </div>
-
-                <div className="space-y-4 pt-4">
-                  <div className="rounded-2xl bg-gradient-to-r from-indigo-500/10 to-sky-400/10 border border-white/40 dark:border-slate-800/60 p-4 shadow-inner">
-                    <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">Subjective</div>
-                    <div className="text-slate-900 dark:text-slate-100 font-semibold">
-                      “I’ve felt short of breath during morning rounds, and my chest feels tight.”
-                    </div>
-                  </div>
-                  <div className="card p-4">
-                    <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">Objective</div>
-                    <div className="text-slate-800 dark:text-slate-200">
-                      HR 82 | BP 124/78 | O2 98% RA | Clear lung sounds | No edema
-                    </div>
-                  </div>
-                  <div className="card p-4">
-                    <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">Assessment</div>
-                    <div className="text-slate-800 dark:text-slate-200">
-                      Mild exertional dyspnea likely related to seasonal asthma flare-up.
-                    </div>
-                  </div>
-                  <div className="card p-4">
-                    <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">Plan</div>
-                    <div className="text-slate-800 dark:text-slate-200">
-                      Resume inhaled corticosteroid BID. Follow-up in 2 weeks. Provide spacer.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            {/* In-action Graphics */}
+            <DashboardPreview />
           </div>
         </section>
 
@@ -107,7 +65,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto text-center space-y-10">
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Trusted by Individual Practitioners</div>
-              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">HIPAA Compliant</div>
+              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">HIPAA & GDPR Compliant</div>
               <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Zero Audio Storage</div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -160,8 +118,8 @@ export default function Home() {
                 },
                 {
                   icon: <SparklesIcon className="h-8 w-8 text-[#0052CC]" />,
-                  title: 'AI Generates SOAP',
-                  body: 'Instantly structured Subjective, Objective, Assessment, Plan—no templates to fight.',
+                  title: 'Generate Reports',
+                  body: 'Instantly generate reports in your preferred template format (e.g., SOAP, DAP, or custom letters).',
                 },
                 {
                   icon: <ClipboardDocumentListIcon className="h-8 w-8 text-[#0052CC]" />,
@@ -192,74 +150,68 @@ export default function Home() {
 
         {/* Problem → Solution Section */}
         <section className="py-16 px-4 bg-white dark:bg-slate-950">
-          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+          <div className="max-w-6xl mx-auto text-center space-y-12">
             <motion.div
-              className="space-y-4"
+              className="space-y-4 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.35 }}
               transition={{ duration: 0.55, ease: 'easeOut' }}
             >
-              <div className="pill w-fit">Your Pain</div>
-              <h3 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">
-                Charting after hours, messy notes, EHR copy-paste fatigue.
+              <div className="pill w-fit mx-auto text-rose-500 bg-rose-500/5 border-rose-500/10">The Documentation Burden</div>
+              <h3 className="text-4xl md:text-5xl font-semibold text-slate-900 dark:text-slate-100">
+                Stop charting after hours.
               </h3>
-              <p className="text-lg text-slate-600 dark:text-slate-300">
-                Doxia listens in real time, writes SOAP for you, and keeps everything ready to drop into Epic, Cerner, or Athena—no integrations needed.
+              <p className="text-xl text-slate-600 dark:text-slate-300">
+                Most doctors spend 2 hours on paperwork for every 1 hour of patient care. Doxia flips the script, automating your clinical documentation with ambient AI that understands medical context.
               </p>
-              <ul className="space-y-3 text-slate-700 dark:text-slate-300">
-                <li className="flex gap-3"><span className="text-[#0052CC] font-bold">•</span> 98%+ capture accuracy in busy clinics.</li>
-                <li className="flex gap-3"><span className="text-[#0052CC] font-bold">•</span> Zero audio retention; HIPAA-first encryption.</li>
-                <li className="flex gap-3"><span className="text-[#0052CC] font-bold">•</span> One-click SOAP output, ready for EHR paste.</li>
-              </ul>
             </motion.div>
-            <motion.div
-              className="glass rounded-3xl p-6 shadow-2xl border border-white/50 dark:border-slate-800/50"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.35 }}
-              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.05 }}
-            >
-              <div className="text-sm text-slate-500 mb-3">Live Output</div>
-              <div className="space-y-3">
-                {['Subjective', 'Objective', 'Assessment', 'Plan'].map((heading) => (
-                  <div key={heading} className="card p-4">
-                    <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">{heading}</div>
-                    <div className="text-slate-900 dark:text-slate-100">
-                      {heading === 'Subjective' && '“Short of breath on rounds, chest tightness this week.”'}
-                      {heading === 'Objective' && 'HR 82 | BP 124/78 | O2 98% RA | Lungs clear | No edema'}
-                      {heading === 'Assessment' && 'Mild exertional dyspnea—likely seasonal asthma flare.'}
-                      {heading === 'Plan' && 'Resume ICS BID, spacer provided, f/u in 2 weeks.'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { title: "Ambient Listening", text: "Capture natural dialogue without a keyboard in the way." },
+                { title: "Multi-Template Support", text: "Generate reports in SOAP, DAP, BIRP, or custom letter formats." },
+                { title: "Team Collaboration", text: "Share notes securely and streamline multi-provider care." },
+                { title: "Local & Multi-Lingual", text: "Optimized for regional accents and multiple languages." }
+              ].map((item, i) => (
+                <motion.div 
+                  key={i}
+                  className="card p-6 text-left space-y-2"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <h4 className="font-bold text-slate-900 dark:text-white">{item.title}</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{item.text}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Differentiators Section */}
         <section className="py-16 px-4 bg-slate-50 dark:bg-slate-900">
-          <div className="max-w-6xl mx-auto">
-            <h3 className="text-3xl font-semibold text-center text-slate-900 dark:text-slate-100 mb-10">
-              Why Doxia beats generic “AI note” tools
+          <div className="max-w-6xl mx-auto text-center space-y-12">
+            <h3 className="text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-10">
+              Why Doxia is built differently
             </h3>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-8">
               {[
-                { title: 'Ambient, clinic-ready', body: 'Built for overlapping voices and background noise—not just clean demos.' },
-                { title: 'Copy/paste EHR flow', body: 'No integrations to break. SOAP arrives structured and ready to drop into Epic, Cerner, Athena.' },
-                { title: 'Privacy-first', body: 'Zero audio storage. End-to-end encryption. HIPAA-first design.' },
+                { title: 'Specialty-Specific Templates', body: 'Go beyond SOAP. Create and use custom templates for DAP, BIRP, or any clinical letterhead format you prefer.' },
+                { title: 'Clinical Team Sync', body: 'Securely collaborate with assistants and other providers. Assign tasks and share finalized reports in one click.' },
+                { title: 'Edge-AI Speed', body: 'No waiting. Our local processing and edge-computing ensure your report is ready seconds after you stop recording.' },
               ].map((item, idx) => (
                 <motion.div
                   key={item.title}
-                  className="card p-6 shadow-lg hover:-translate-y-1 transition-transform"
+                  className="card p-8 shadow-lg hover:-translate-y-1 transition-transform text-left border-slate-200/60 dark:border-slate-800/60"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.45, ease: 'easeOut', delay: idx * 0.08 }}
                 >
-                  <h4 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{item.title}</h4>
-                  <p className="text-slate-600 dark:text-slate-300">{item.body}</p>
+                  <h4 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-3">{item.title}</h4>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{item.body}</p>
                 </motion.div>
               ))}
             </div>
@@ -267,27 +219,66 @@ export default function Home() {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-16 px-4 bg-white dark:bg-slate-950">
-          <div className="max-w-5xl mx-auto">
-            <h3 className="text-3xl font-semibold text-center text-slate-900 dark:text-slate-100 mb-10">FAQs</h3>
+        <section className="py-24 px-4 bg-white dark:bg-slate-950">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-16">
+              <div className="pill w-fit mx-auto mb-4">Security & Trust</div>
+              <h3 className="text-4xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Common Questions
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                Everything you need to know about Doxia's security, privacy, and workflow.
+              </p>
+            </div>
+
             <div className="space-y-4">
               {[
-                { q: 'Do you store audio?', a: 'No. Audio is processed in-session only; nothing is stored on our servers.' },
-                { q: 'Will this work with my EHR?', a: 'Yes. We generate SOAP text you can paste into Epic, Cerner, Athena, or any EHR with a notes field.' },
-                { q: 'Is it HIPAA compliant?', a: 'Yes. We use end-to-end encryption and keep zero audio retention by design.' },
-                { q: 'What’s included for $4.99?', a: 'Lifetime access to ambient capture, SOAP formatting, updates to core features, and desktop + mobile access.' },
+                {
+                  q: "How does Doxia ensure HIPAA compliance?",
+                  a: "Doxia is built with a 'Privacy by Design' approach. We use AES-256 bank-grade encryption for all data, sign Business Associate Agreements (BAA) with our infrastructure partners, and maintain a strict zero-audio-retention policy—meaning audio is processed in real-time and never saved to a disk.",
+                },
+                {
+                  q: "How does Doxia ensure GDPR compliance?",
+                  a: "We comply with GDPR by ensuring all data processing has a clear legal basis, providing 'Right to be Forgotten' tools, and using data processing centers that meet EU privacy standards. Our end-to-end encryption ensures that even we cannot access sensitive patient information.",
+                },
+                {
+                  q: "Does Doxia share my data with anyone?",
+                  a: "Never. Your data is yours. We do not sell, trade, or share clinician or patient data with third parties for marketing or any other purposes. Data is only used to generate your specific reports.",
+                },
+                {
+                  q: "Do you encrypt data at rest?",
+                  a: "Yes. While we minimize data storage, any information that must be persisted (like your account settings) is encrypted using industry-standard AES-256 encryption at rest and TLS 1.3 in transit.",
+                },
+                {
+                  q: "What happens to my data if I delete my account?",
+                  a: "If you delete your account, all associated data is immediately and permanently purged from our active databases and eventually cleared from encrypted backups, satisfying your 'Right to Erasure'.",
+                },
+                {
+                  q: "Does Doxia store payment details?",
+                  a: "No. All payments are processed securely via RevenueCat and Stripe. We never see or store your credit card or billing information on our servers.",
+                },
+                {
+                  q: "What if I have a security concern?",
+                  a: "We take security reports seriously. You can reach our security team directly via the support link in your dashboard for immediate assistance and disclosure.",
+                },
               ].map((item, idx) => (
-                <motion.div
-                  key={item.q}
-                  className="card p-4 shadow-sm"
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{ duration: 0.4, ease: 'easeOut', delay: idx * 0.04 }}
+                <details
+                  key={idx}
+                  className="group card overflow-hidden border-slate-200/60 dark:border-slate-800/60 transition-all duration-300"
                 >
-                  <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">{item.q}</div>
-                  <div className="text-slate-600 dark:text-slate-300 mt-2">{item.a}</div>
-                </motion.div>
+                  <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
+                    <span className="text-lg font-semibold text-slate-800 dark:text-slate-100 pr-4">
+                      {item.q}
+                    </span>
+                    <div className="relative flex-shrink-0 w-6 h-6 transition-transform duration-300 group-open:rotate-180">
+                      <span className="absolute inset-0 m-auto w-4 h-0.5 bg-slate-400 rounded-full" />
+                      <span className="absolute inset-0 m-auto h-4 w-0.5 bg-slate-400 rounded-full group-open:opacity-0 transition-opacity" />
+                    </div>
+                  </summary>
+                  <div className="px-6 pb-6 text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-50 dark:border-slate-800/50 pt-4">
+                    {item.a}
+                  </div>
+                </details>
               ))}
             </div>
           </div>
@@ -298,20 +289,19 @@ export default function Home() {
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h3 className="text-3xl md:text-4xl font-semibold">Lifetime access. One price. Less paperwork, more patients.</h3>
             <p className="text-lg text-white/80">
-              Ambient listening, instant SOAP, HIPAA compliance, and copy-paste EHR flow. Pay once—no subscriptions.
+              Ambient listening, instant SOAP, HIPAA & GDPR compliance, and copy-paste EHR flow. Pay once—no subscriptions.
             </p>
-            <button
-              onClick={() => setIsSignupModalOpen(true)}
-              className="bg-white text-slate-900 px-10 py-4 rounded-full text-xl font-semibold hover:bg-slate-100 transition-colors shadow-2xl"
+            <Link
+              href="/signup"
+              className="bg-white text-slate-900 px-10 py-4 rounded-full text-xl font-semibold hover:bg-slate-100 transition-colors shadow-2xl inline-block"
             >
               Get Early Access – $4.99
-            </button>
+            </Link>
             <p className="text-sm text-white/70">30-day money-back guarantee. Early access slots are limited.</p>
           </div>
         </section>
       </main>
       <Footer />
-      <SignupModal isOpen={isSignupModalOpen} onClose={() => setIsSignupModalOpen(false)} />
     </>
   )
 }

@@ -1,13 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import SignupModal from '../components/SignupModal'
 
 export default function Pricing() {
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false)
 
   const features = [
     'Unlimited scribing',
@@ -78,12 +76,12 @@ export default function Pricing() {
                 ))}
               </div>
 
-              <button
-                onClick={() => setIsSignupModalOpen(true)}
-                className="w-full bg-gradient-to-r from-[#0052CC] to-indigo-500 text-white py-4 rounded-full text-xl font-semibold hover:shadow-[0_25px_70px_-30px_rgba(0,82,204,0.8)] transition-all duration-300 hover:-translate-y-0.5 mb-4"
+              <Link
+                href="/signup"
+                className="w-full bg-gradient-to-r from-[#0052CC] to-indigo-500 text-white py-4 rounded-full text-xl font-semibold hover:shadow-[0_25px_70px_-30px_rgba(0,82,204,0.8)] transition-all duration-300 hover:-translate-y-0.5 mb-4 inline-block text-center"
               >
                 Get Lifetime Access Now
-              </button>
+              </Link>
               <p className="text-sm text-slate-500 dark:text-slate-400 italic">
                 Limited time offer. No recurring charges. Ever.
               </p>
@@ -92,8 +90,6 @@ export default function Pricing() {
         </section>
       </main>
       <Footer />
-      <SignupModal isOpen={isSignupModalOpen} onClose={() => setIsSignupModalOpen(false)} />
     </>
   )
 }
-

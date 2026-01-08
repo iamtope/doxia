@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -6,7 +6,9 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 text-slate-700 dark:text-slate-300">
           <span className="text-lg font-semibold">doxia</span>
-          <span className="text-sm text-slate-500 dark:text-slate-400">AI medical scribe</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            AI medical scribe
+          </span>
         </div>
         <div className="flex gap-6 text-sm">
           <Link
@@ -22,9 +24,10 @@ export default function Footer() {
             Terms of Service
           </Link>
         </div>
-        <p className="text-slate-500 dark:text-slate-500 text-sm">&copy; 2024 Doxia.</p>
+        <p className="text-slate-500 dark:text-slate-500 text-sm">
+          &copy; {new Date().getFullYear()} Doxia.
+        </p>
       </div>
     </footer>
-  )
+  );
 }
-

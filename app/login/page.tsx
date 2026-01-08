@@ -1,0 +1,97 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import ThemeToggle from "../components/ThemeToggle";
+
+export default function Login() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Login attempt:", formData);
+    // Always login for now as per user request
+    router.push("/dashboard");
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+      <div className="absolute top-8 right-8">
+        <ThemeToggle />
+      </div>
+
+      <div className="absolute inset-0 bg-grid dark:bg-grid-dark opacity-20 pointer-events-none" />
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="text-center mb-10">
+          <Link href="/" className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">doxia</Link>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-6">Welcome back</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">Log in to your account to continue.</p>
+        </div>
+
+        <div className="glass rounded-[32px] p-8 md:p-10 shadow-2xl border-white/40 dark:border-slate-800/60">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="john@clinic.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-trust-blue/20 focus:border-trust-blue outline-none transition-all"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
+                  <Link href="#" className="text-xs font-bold text-trust-blue hover:underline">Forgot password?</Link>
+                </div>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-trust-blue/20 focus:border-trust-blue outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-xl shadow-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 group"
+            >
+              Log In
+              <ChevronRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center gap-4">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
+              Don't have an account?{" "}
+              <Link href="/signup" className="text-trust-blue font-bold hover:underline">Sign up</Link>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-10 text-center text-xs text-slate-400 uppercase tracking-widest font-bold">
+          HIPAA & GDPR Compliant Security
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
