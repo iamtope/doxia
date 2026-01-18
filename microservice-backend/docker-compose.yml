@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: doxxia_users
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  user-service:
+    build:
+      context: ./user-service
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: doxxia_users
+      JWT_SECRET: super-secret-key
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    ports:
+      - "3002:3002"
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    depends_on:
+      - user-service
+    environment:
+      USER_SERVICE_URL: http://user-service:3002/users
+    ports:
+      - "3003:3003"
+
+  scribe-service:
+    build:
+      context: ./scribe-service
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "8001:8000"
+
+volumes:
+  postgres_data:

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { SparklesIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import ThemeToggle from "../components/ThemeToggle";
+import toast from "react-hot-toast";
 
 export default function Signup() {
   const router = useRouter();
@@ -16,12 +17,37 @@ export default function Signup() {
     clinicName: "",
     password: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Signup attempt:", formData);
-    // Always login for now as per user request
-    router.push("/dashboard");
+    setIsSubmitting(true);
+    try {
+      const GATEWAY_BASE = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3003";
+      const response = await fetch(`${GATEWAY_BASE}/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Signup success:", data);
+        toast.success("Account created! Please log in.");
+        router.push("/login");
+      } else {
+        const error = await response.json();
+        console.error("Signup failed:", error);
+        toast.error(error.message || "Signup failed. Email might be taken.");
+      }
+    } catch (err) {
+      console.error("Error during signup:", err);
+      toast.error("An error occurred. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -29,11 +55,13 @@ export default function Signup() {
       {/* Left Side - Branding & Info */}
       <div className="md:w-[40%] bg-gradient-to-br from-[#0052CC] to-indigo-700 p-12 text-white flex flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-10 pointer-events-none" />
-        
+
         <div className="relative z-10">
-          <Link href="/" className="text-3xl font-bold tracking-tight">doxia</Link>
+          <Link href="/" className="text-3xl font-bold tracking-tight">
+            doxia
+          </Link>
           <div className="mt-20 space-y-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="pill bg-white/10 border-white/20 text-white w-fit"
@@ -44,7 +72,8 @@ export default function Signup() {
               Ready to automate your clinical workflow?
             </h1>
             <p className="text-xl text-white/80 leading-relaxed max-w-md">
-              Get lifetime access to the most intuitive AI medical scribe ever built.
+              Get lifetime access to the most intuitive AI medical scribe ever
+              built.
             </p>
           </div>
         </div>
@@ -56,7 +85,9 @@ export default function Signup() {
             </div>
             <div>
               <p className="font-bold">Apple-Level Polish</p>
-              <p className="text-sm text-white/60 text-pretty">Designed to feel like native medical software.</p>
+              <p className="text-sm text-white/60 text-pretty">
+                Designed to feel like native medical software.
+              </p>
             </div>
           </div>
           <div className="text-xs text-white/40">
@@ -70,14 +101,16 @@ export default function Signup() {
         <div className="absolute top-8 right-8">
           <ThemeToggle />
         </div>
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md space-y-8"
         >
           <div>
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Create your account</h2>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+              Create your account
+            </h2>
             <p className="text-slate-500 dark:text-slate-400 mt-2">
               Start your journey towards effortless documentation.
             </p>
@@ -87,24 +120,32 @@ export default function Signup() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Full Name</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Full Name
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="Dr. John Doe"
                     value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, fullName: e.target.value })
+                    }
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-trust-blue/20 focus:border-trust-blue outline-none transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email Address</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Email Address
+                  </label>
                   <input
                     type="email"
                     required
                     placeholder="john@clinic.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-trust-blue/20 focus:border-trust-blue outline-none transition-all"
                   />
                 </div>
@@ -112,37 +153,49 @@ export default function Signup() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Specialty</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Specialty
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="Family Medicine"
                     value={formData.specialty}
-                    onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, specialty: e.target.value })
+                    }
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-trust-blue/20 focus:border-trust-blue outline-none transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Clinic Name</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Clinic Name
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="Wellness Clinic"
                     value={formData.clinicName}
-                    onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, clinicName: e.target.value })
+                    }
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-trust-blue/20 focus:border-trust-blue outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Password
+                </label>
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-trust-blue/20 focus:border-trust-blue outline-none transition-all"
                 />
               </div>
@@ -150,20 +203,25 @@ export default function Signup() {
 
             <button
               type="submit"
-              className="w-full bg-trust-blue hover:bg-trust-blue/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-trust-blue/20 transition-all flex items-center justify-center gap-2 group"
+              disabled={isSubmitting}
+              className="w-full bg-trust-blue hover:bg-trust-blue/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-trust-blue/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
             >
-              Create Account
+              {isSubmitting ? "Creating Account..." : "Create Account"}
               <ChevronRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
 
           <p className="text-center text-slate-500 dark:text-slate-400">
             Already have an account?{" "}
-            <Link href="/login" className="text-trust-blue font-bold hover:underline">Log in</Link>
+            <Link
+              href="/login"
+              className="text-trust-blue font-bold hover:underline"
+            >
+              Log in
+            </Link>
           </p>
         </motion.div>
       </div>
     </div>
   );
 }
-

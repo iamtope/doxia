@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+aio_pika
+pydantic-settings
+python-dotenv
+spacy
+redis
+openai
+python-multipart
