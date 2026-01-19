@@ -46,12 +46,6 @@ services:
       USER_SERVICE_URL: http://user-service:3002/users
     ports:
       - "3003:3003"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.doxxia-api.rule=Host(`doxia.rently247.com`) && PathPrefix(`/auth`)"
-      - "traefik.http.routers.doxxia-api.entrypoints=websecure"
-      - "traefik.http.routers.doxxia-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.doxxia-api.loadbalancer.server.port=3003"
 
   scribe-service:
     build:
@@ -64,12 +58,6 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
       - "8001:8000"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.doxxia-scribe.rule=Host(`doxia.rently247.com`) && (PathPrefix(`/scribe`) || PathPrefix(`/ws`))"
-      - "traefik.http.routers.doxxia-scribe.entrypoints=websecure"
-      - "traefik.http.routers.doxxia-scribe.tls.certresolver=letsencrypt"
-      - "traefik.http.services.doxxia-scribe.loadbalancer.server.port=8000"
 
 volumes:
   postgres_data:
