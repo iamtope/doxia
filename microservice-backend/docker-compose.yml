@@ -5,21 +5,20 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: doxxia_users
-    ports:
-      - "5433:5432"
+    # REMOVED public port 5433:5432 for security
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    # Only expose management UI (15672) if you need it, but 5672 should be private
     ports:
-      - "5672:5672"
       - "15672:15672"
+    # REMOVED public port 5672:5672 for security
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    # REMOVED public port 6379:6379 for security
 
   user-service:
     build:
