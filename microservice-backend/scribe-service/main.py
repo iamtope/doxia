@@ -203,6 +203,7 @@ async def get_full_transcript(session_id: str):
     return {"session_id": session_id, "full_transcript": full_text}
 
 @app.post("/process-audio")
+@app.post("/scribe/process-audio")
 async def process_audio(
     audio: UploadFile = File(...),
     session_id: str = Form(...),
