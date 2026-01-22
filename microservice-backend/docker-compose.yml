@@ -57,7 +57,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
-      - "8001:8000"
+      - "8001:8001"
 
 volumes:
   postgres_data:
