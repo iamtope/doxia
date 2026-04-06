@@ -32,10 +32,16 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_NAME: doxxia_users
-      JWT_SECRET: super-secret-key
+      JWT_SECRET: ${JWT_SECRET}
+      TYPEORM_SYNC: "true"
       RABBITMQ_URL: amqp://rabbitmq:5672
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001"
+      CHOKIDAR_USEPOLLING: "true"
     ports:
       - "3002:3002"
+    volumes:
+      - ./user-service/src:/app/src
+    command: ["npm", "run", "start:dev"]
 
   api-gateway:
     build:
@@ -44,20 +50,40 @@ services:
       - user-service
     environment:
       USER_SERVICE_URL: http://user-service:3002/users
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001"
+      CHOKIDAR_USEPOLLING: "true"
     ports:
       - "3003:3003"
+    volumes:
+      - ./api-gateway/src:/app/src
+    command: ["npm", "run", "start:dev"]
 
   scribe-service:
     build:
       context: ./scribe-service
     depends_on:
       - rabbitmq
+      - redis
     environment:
       RABBITMQ_URL: amqp://rabbitmq:5672
       REDIS_URL: redis://redis:6379/0
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # Reliable --reload with bind mounts (Docker Desktop Mac/Windows)
+      WATCHFILES_FORCE_POLLING: "true"
     ports:
       - "8001:8001"
+    volumes:
+      - ./scribe-service:/app
+    command:
+      [
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8001",
+        "--reload",
+      ]
 
 volumes:
   postgres_data:

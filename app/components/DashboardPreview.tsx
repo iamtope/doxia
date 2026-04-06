@@ -63,7 +63,7 @@ export default function DashboardPreview() {
             <p className="text-[10px] uppercase tracking-wider font-bold text-trust-blue mb-1">Status</p>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">HIPAA & GDPR Protected</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Privacy Protected</span>
             </div>
           </div>
         </div>

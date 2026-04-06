@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, HttpException, HttpStatus, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, HttpException, HttpStatus, Param, Req, Headers } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
@@ -19,6 +19,10 @@ export class UserController {
       'Internal Gateway Error',
       HttpStatus.INTERNAL_SERVER_ERROR
     );
+  }
+
+  private authHeaders(authorization?: string) {
+    return authorization ? { Authorization: authorization } : {};
   }
 
   @Post('signup')
@@ -46,10 +50,12 @@ export class UserController {
   }
 
   @Post('notes')
-  async saveNote(@Body() noteData: any) {
+  async saveNote(@Body() noteData: any, @Headers('authorization') auth?: string) {
     try {
       const response = await firstValueFrom(
-        this.httpService.post(`${this.USER_SERVICE_URL}/notes`, noteData)
+        this.httpService.post(`${this.USER_SERVICE_URL}/notes`, noteData, {
+          headers: this.authHeaders(auth),
+        })
       );
       return response.data;
     } catch (error) {
@@ -58,10 +64,12 @@ export class UserController {
   }
 
   @Get('notes/:userId')
-  async getNotes(@Param('userId') userId: string) {
+  async getNotes(@Param('userId') userId: string, @Headers('authorization') auth?: string) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${this.USER_SERVICE_URL}/notes/${userId}`)
+        this.httpService.get(`${this.USER_SERVICE_URL}/notes/${userId}`, {
+          headers: this.authHeaders(auth),
+        })
       );
       return response.data;
     } catch (error) {

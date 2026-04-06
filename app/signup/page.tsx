@@ -72,8 +72,8 @@ export default function Signup() {
               Ready to automate your clinical workflow?
             </h1>
             <p className="text-xl text-white/80 leading-relaxed max-w-md">
-              Get lifetime access to the most intuitive AI medical scribe ever
-              built.
+              Join the beta of the most intuitive AI medical scribe ever
+              built. Free while in beta.
             </p>
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function Signup() {
             </div>
           </div>
           <div className="text-xs text-white/40">
-            &copy; {new Date().getFullYear()} Doxia. HIPAA & GDPR Compliant.
+            &copy; {new Date().getFullYear()} Doxia. Privacy-first design.
           </div>
         </div>
       </div>

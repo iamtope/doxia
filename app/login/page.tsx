@@ -98,12 +98,6 @@ export default function Login() {
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
                     Password
                   </label>
-                  <Link
-                    href="#"
-                    className="text-xs font-bold text-trust-blue hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
                 </div>
                 <input
                   type="password"
@@ -142,7 +136,7 @@ export default function Login() {
         </div>
 
         <div className="mt-10 text-center text-xs text-slate-400 uppercase tracking-widest font-bold">
-          HIPAA & GDPR Compliant Security
+          Security-First Design
         </div>
       </motion.div>
     </div>

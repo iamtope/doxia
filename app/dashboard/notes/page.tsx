@@ -26,22 +26,24 @@ interface Note {
 }
 
 export default function PatientNotes() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && token) {
       fetchNotes();
     }
-  }, [user]);
+  }, [user, token]);
 
   const fetchNotes = async () => {
     setIsLoading(true);
     try {
       const GATEWAY_BASE = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3003";
-      const response = await fetch(`${GATEWAY_BASE}/auth/notes/${user?.id}`);
+      const response = await fetch(`${GATEWAY_BASE}/auth/notes/${user?.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok) throw new Error("Failed to fetch notes");
       const data = await response.json();
       setNotes(data);

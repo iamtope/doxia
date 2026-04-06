@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-doxxia_users}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-alpine
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ./user-service
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-doxxia_users}
+      JWT_SECRET: ${JWT_SECRET}
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      TYPEORM_SYNC: "false"
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    depends_on:
+      - user-service
+    environment:
+      USER_SERVICE_URL: http://user-service:3002/users
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+
+  scribe-service:
+    build:
+      context: ./scribe-service
+    depends_on:
+      - rabbitmq
+      - redis
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

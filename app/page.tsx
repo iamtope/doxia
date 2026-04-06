@@ -32,9 +32,9 @@ export default function Home() {
             >
               <div className="pill w-fit mx-auto">
                 <SparklesIcon className="h-4 w-4 text-[#0052CC]" />
-                <span className="text-slate-500">HIPAA & GDPR Compliant</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                <span className="text-slate-700 dark:text-slate-200 font-semibold">Ambient AI Scribe</span>
+                <span className="text-slate-500">Privacy-First Design</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                <span className="text-slate-700 dark:text-slate-200 font-semibold">Early Access Beta</span>
               </div>
               <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
                 Medical notes that feel like <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0052CC] to-indigo-500">Apple-level magic.</span>
@@ -47,10 +47,10 @@ export default function Home() {
                   href="/signup"
                   className="bg-gradient-to-r from-[#0052CC] to-indigo-500 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-[0_20px_60px_-25px_rgba(0,82,204,0.7)] hover:shadow-[0_25px_70px_-30px_rgba(0,82,204,0.8)] transition-all duration-300 hover:-translate-y-0.5"
                 >
-                  Get Lifetime Access - $4.99
+                  Try Free Beta
                 </Link>
                 <span className="text-slate-500 dark:text-slate-400 text-sm">
-                  Zero subscriptions. Lifetime updates.
+                  Free during beta. No credit card required.
                 </span>
               </div>
             </motion.div>
@@ -64,15 +64,15 @@ export default function Home() {
         <section className="py-16 px-4 bg-white dark:bg-slate-950">
           <div className="max-w-6xl mx-auto text-center space-y-10">
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Trusted by Individual Practitioners</div>
-              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">HIPAA & GDPR Compliant</div>
-              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Zero Audio Storage</div>
+              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Built for Independent Practitioners</div>
+              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Privacy-First Architecture</div>
+              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Zero Audio Retention</div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { label: 'Active Users', value: '500+' },
-                { label: 'Notes Generated', value: '50K+' },
-                { label: 'Daily Time Saved', value: '2 hrs' },
+                { label: 'Note Formats', value: 'SOAP+' },
+                { label: 'Speaker Diarization', value: 'Built-in' },
+                { label: 'Avg. Time Saved', value: '~2 hrs' },
               ].map((item, idx) => (
                 <motion.div
                   key={item.label}
@@ -94,11 +94,10 @@ export default function Home() {
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
             >
-              <p className="text-sm uppercase tracking-wide text-slate-500 mb-2">Testimonial</p>
+              <p className="text-sm uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2 font-bold">Early Access</p>
               <p className="text-xl text-slate-900 dark:text-slate-100 font-semibold leading-relaxed">
-                “Doxia turned 2 hours of nightly charting into 10 minutes. My notes are cleaner, my patients get more face time, and I’m not drowning after clinic.”
+                Doxia is in open beta. We&apos;re building this with real clinician feedback &mdash; join early and help shape the product.
               </p>
-              <p className="mt-3 text-sm text-slate-500">— Dr. L. Morales, Family Medicine</p>
             </motion.div>
           </div>
         </section>
@@ -148,7 +147,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Problem → Solution Section */}
+        {/* Problem / Solution Section */}
         <section className="py-16 px-4 bg-white dark:bg-slate-950">
           <div className="max-w-6xl mx-auto text-center space-y-12">
             <motion.div
@@ -227,19 +226,19 @@ export default function Home() {
                 Common Questions
               </h3>
               <p className="text-slate-600 dark:text-slate-400">
-                Everything you need to know about Doxia's security, privacy, and workflow.
+                Everything you need to know about Doxia&apos;s security, privacy, and workflow.
               </p>
             </div>
 
             <div className="space-y-4">
               {[
                 {
-                  q: "How does Doxia ensure HIPAA compliance?",
-                  a: "Doxia is built with a 'Privacy by Design' approach. We use AES-256 bank-grade encryption for all data, sign Business Associate Agreements (BAA) with our infrastructure partners, and maintain a strict zero-audio-retention policy—meaning audio is processed in real-time and never saved to a disk.",
+                  q: "How does Doxia handle patient privacy?",
+                  a: "Doxia is built with a privacy-first architecture. Audio is processed in real-time and never persisted to disk. We apply PII scrubbing before storing any transcript data. We are actively working toward formal HIPAA compliance and BAA agreements.",
                 },
                 {
-                  q: "How does Doxia ensure GDPR compliance?",
-                  a: "We comply with GDPR by ensuring all data processing has a clear legal basis, providing 'Right to be Forgotten' tools, and using data processing centers that meet EU privacy standards. Our end-to-end encryption ensures that even we cannot access sensitive patient information.",
+                  q: "Is Doxia HIPAA compliant?",
+                  a: "We are building toward HIPAA compliance but have not yet completed a formal audit or signed BAAs. During this beta period, we recommend not using Doxia with real patient data in a clinical setting. We will clearly announce when formal compliance is achieved.",
                 },
                 {
                   q: "Does Doxia share my data with anyone?",
@@ -247,19 +246,19 @@ export default function Home() {
                 },
                 {
                   q: "Do you encrypt data at rest?",
-                  a: "Yes. While we minimize data storage, any information that must be persisted (like your account settings) is encrypted using industry-standard AES-256 encryption at rest and TLS 1.3 in transit.",
+                  a: "We are implementing encryption at rest and TLS in transit. During beta, data is stored in a standard PostgreSQL database. We will add full AES-256 encryption before general availability.",
                 },
                 {
                   q: "What happens to my data if I delete my account?",
-                  a: "If you delete your account, all associated data is immediately and permanently purged from our active databases and eventually cleared from encrypted backups, satisfying your 'Right to Erasure'.",
+                  a: "If you delete your account, all associated data is permanently purged from our databases.",
                 },
                 {
-                  q: "Does Doxia store payment details?",
-                  a: "No. All payments are processed securely via RevenueCat and Stripe. We never see or store your credit card or billing information on our servers.",
+                  q: "Is Doxia free?",
+                  a: "Doxia is free during the beta period. We may introduce paid plans in the future, but early beta users will always be taken care of.",
                 },
                 {
                   q: "What if I have a security concern?",
-                  a: "We take security reports seriously. You can reach our security team directly via the support link in your dashboard for immediate assistance and disclosure.",
+                  a: "We take security reports seriously. You can reach our team directly via the support link in your dashboard for immediate assistance and disclosure.",
                 },
               ].map((item, idx) => (
                 <details
@@ -287,17 +286,17 @@ export default function Home() {
         {/* Final Recap CTA */}
         <section className="py-16 px-4 bg-gradient-to-r from-[#0052CC] to-indigo-600 text-white">
           <div className="max-w-4xl mx-auto text-center space-y-6">
-            <h3 className="text-3xl md:text-4xl font-semibold">Lifetime access. One price. Less paperwork, more patients.</h3>
+            <h3 className="text-3xl md:text-4xl font-semibold">Less paperwork, more patients.</h3>
             <p className="text-lg text-white/80">
-              Ambient listening, instant SOAP, HIPAA & GDPR compliance, and copy-paste EHR flow. Pay once—no subscriptions.
+              Ambient listening, instant SOAP, privacy-first architecture, and copy-paste EHR flow. Free during beta.
             </p>
             <Link
               href="/signup"
               className="bg-white text-slate-900 px-10 py-4 rounded-full text-xl font-semibold hover:bg-slate-100 transition-colors shadow-2xl inline-block"
             >
-              Get Early Access – $4.99
+              Join the Beta
             </Link>
-            <p className="text-sm text-white/70">30-day money-back guarantee. Early access slots are limited.</p>
+            <p className="text-sm text-white/70">No credit card required. Early access slots are limited.</p>
           </div>
         </section>
       </main>
@@ -305,4 +304,3 @@ export default function Home() {
     </>
   )
 }
-

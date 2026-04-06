@@ -5,4 +5,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download the small English model for PII detection
 RUN python -m spacy download en_core_web_sm
 COPY . .
-CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

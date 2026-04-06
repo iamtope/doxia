@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('users')
 export class AppController {
@@ -21,18 +22,29 @@ export class AppController {
     return this.appService.login(loginDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('notes')
-  async saveNote(@Body() data: { userId: number; note: any }) {
-    return this.appService.saveNote(data.userId, data.note);
+  async saveNote(@Req() req: any, @Body() data: { note: any }) {
+    const userId = req.user.sub;
+    return this.appService.saveNote(userId, data.note);
   }
 
-  @Get('notes/:userId')
-  async getNotes(@Payload() userId: number) {
-    // Note: In a real app, this would use the JWT user ID
+  @UseGuards(JwtAuthGuard)
+  @Get('notes')
+  async getMyNotes(@Req() req: any) {
+    const userId = req.user.sub;
     return this.appService.getNotes(userId);
   }
 
-  // RabbitMQ handlers for cross-service communication
+  @UseGuards(JwtAuthGuard)
+  @Get('notes/:userId')
+  async getNotes(@Req() req: any, @Param('userId') userId: string) {
+    if (req.user.sub !== parseInt(userId, 10)) {
+      return this.appService.getNotes(req.user.sub);
+    }
+    return this.appService.getNotes(parseInt(userId, 10));
+  }
+
   @MessagePattern('user.signup')
   async handleSignup(@Payload() data: any) {
     return this.appService.signup(data);

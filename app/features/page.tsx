@@ -52,7 +52,7 @@ export default function Features() {
       icon: <ShieldCheckIcon className="h-9 w-9 text-[#0052CC]" />,
       title: "Privacy-First Design",
       description:
-        "Zero audio storage and end-to-end encryption. HIPAA & GDPR compliance is engineered into the core of Doxia.",
+        "Zero audio retention and privacy-first architecture. We are building toward formal compliance certifications.",
     },
     {
       icon: <SparklesIcon className="h-9 w-9 text-[#0052CC]" />,
@@ -159,7 +159,7 @@ export default function Features() {
 
               <div className="relative z-10 space-y-8">
                 <div className="pill mx-auto bg-white/10 border-white/20 text-white">
-                  Founder’s Deal
+                  Open Beta
                 </div>
                 <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
                   Ready to automate your <br className="hidden md:block" />
@@ -170,10 +170,10 @@ export default function Features() {
                     href="/signup"
                     className="bg-white text-slate-900 px-12 py-5 rounded-full text-xl font-bold hover:shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:-translate-y-1 transition-all duration-300"
                   >
-                    Get Lifetime Access - $4.99
+                    Join the Free Beta
                   </Link>
                   <p className="text-white/70 text-sm font-medium">
-                    30-day money-back guarantee. No subscriptions.
+                    No credit card required. Free during beta.
                   </p>
                 </div>
               </div>

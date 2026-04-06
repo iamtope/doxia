@@ -17,11 +17,11 @@ import { RabbitMQModule } from './rabbitmq.module';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'doxxia_users',
       entities: [User, Note],
-      synchronize: true, // Only for development
+      synchronize: process.env.TYPEORM_SYNC === 'true',
     }),
     TypeOrmModule.forFeature([User, Note]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'super-secret-key',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
     RabbitMQModule,

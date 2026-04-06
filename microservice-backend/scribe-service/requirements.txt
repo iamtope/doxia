@@ -5,5 +5,5 @@ pydantic-settings
 python-dotenv
 spacy
 redis
-openai
+openai>=1.109.0
 python-multipart

@@ -11,10 +11,10 @@ export class User {
     @Column({ unique: true })
     email: string;
 
-    @Column()
+    @Column({ nullable: true })
     specialty: string;
 
-    @Column()
+    @Column({ nullable: true })
     clinicName: string;
 
     @Column({ select: false })

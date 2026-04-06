@@ -20,10 +20,10 @@ export default function Privacy() {
         <section className="py-16 px-4 bg-white dark:bg-slate-900">
           <div className="max-w-3xl mx-auto prose prose-slate dark:prose-invert">
             <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-slate-100">
-              HIPAA Compliance
+              Privacy &amp; Data Handling
             </h2>
             <p className="text-slate-600 dark:text-slate-400 mb-8">
-              Doxia is designed with HIPAA compliance at its core. We implement end-to-end encryption and follow strict data handling protocols to ensure your patient information remains secure.
+              Doxia is built with privacy-first architecture. Audio is processed in real-time and never persisted to disk. We apply PII scrubbing to all transcript data. We are actively working toward formal HIPAA compliance and will announce when formal certifications are achieved.
             </p>
 
             <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-slate-100">

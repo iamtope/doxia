@@ -35,8 +35,33 @@ const TEMPLATES = {
   },
 };
 
+const SESSION_CAP_SECONDS = 30 * 60; // 30 minutes
+const TOTAL_USAGE_CAP_SECONDS = 2 * 60 * 60; // 2 hours
+const USAGE_STORAGE_KEY = "doxia_total_usage_seconds";
+
+function getTotalUsage(): number {
+  if (typeof window === "undefined") return 0;
+  return parseInt(localStorage.getItem(USAGE_STORAGE_KEY) || "0", 10);
+}
+
+function addUsage(seconds: number) {
+  const current = getTotalUsage();
+  localStorage.setItem(USAGE_STORAGE_KEY, String(current + seconds));
+}
+
+function getRemainingUsage(): number {
+  return Math.max(0, TOTAL_USAGE_CAP_SECONDS - getTotalUsage());
+}
+
+function formatUsageTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 export default function LiveScribe() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [sessionTime, setSessionTime] = useState(0);
@@ -57,6 +82,16 @@ export default function LiveScribe() {
   const [billingCodes, setBillingCodes] = useState<any[]>([]);
   const [patientSummary, setPatientSummary] = useState<string>("");
   const [rawTranscript, setRawTranscript] = useState<string>("");
+  const [speakerUtterances, setSpeakerUtterances] = useState<
+    {
+      speaker: string | null;
+      text: string;
+      start: number;
+      end: number;
+      segment_id?: string | null;
+    }[]
+  >([]);
+  const [diarizationEnabled, setDiarizationEnabled] = useState(false);
   const [editNote, setEditNote] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -106,7 +141,23 @@ export default function LiveScribe() {
   useEffect(() => {
     if (isRecording && !isPaused) {
       timerRef.current = setInterval(() => {
-        setSessionTime((prev) => prev + 1);
+        setSessionTime((prev) => {
+          const next = prev + 1;
+          if (next >= SESSION_CAP_SECONDS) {
+            toast.error(
+              "Session limit reached (30 min). Stopping and generating your report."
+            );
+            setTimeout(() => handleStopRecording(), 0);
+          }
+          const remaining = getRemainingUsage();
+          if (remaining <= 0) {
+            toast.error(
+              "You have reached your 2-hour total usage limit for this beta period."
+            );
+            setTimeout(() => handleStopRecording(), 0);
+          }
+          return next;
+        });
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -164,6 +215,20 @@ export default function LiveScribe() {
   };
 
   const handleStartRecording = async () => {
+    const remaining = getRemainingUsage();
+    if (remaining <= 0) {
+      toast.error(
+        "You have reached your 2-hour total usage limit for this beta period. Contact support if you need more time."
+      );
+      return;
+    }
+    if (remaining < 60) {
+      toast(
+        `Less than 1 minute of usage remaining (${formatUsageTime(remaining)} left).`,
+        { icon: "⚠️" }
+      );
+    }
+
     const sessionId = `session-${Date.now()}`;
     setCurrentSessionId(sessionId);
     sessionIdRef.current = sessionId;
@@ -233,15 +298,15 @@ export default function LiveScribe() {
         }
       };
 
-      socketRef.current.onerror = (err) => {
-        console.error("WS Error:", err);
+      socketRef.current.onerror = () => {
+        console.error("WebSocket connection error");
         toast.error(
-          "WebSocket connection failed. Ensure scribe-service is running."
+          "Could not connect to the transcription service. Please try again or contact support."
         );
-        handleStopRecording();
+        cleanupLiveRecording();
       };
     } catch (err) {
-      toast.error("Failed to connect to scribe service");
+      toast.error("Could not connect to the transcription service. Please try again.");
       return;
     }
 
@@ -300,6 +365,8 @@ export default function LiveScribe() {
     setIsRecording(true);
     setIsPaused(false);
     setGeneratedNote(null);
+    setSpeakerUtterances([]);
+    setDiarizationEnabled(false);
     setTranscriptChunks([]);
     setSessionTime(0);
   };
@@ -320,7 +387,8 @@ export default function LiveScribe() {
     }
   };
 
-  const handleStopRecording = async () => {
+  /** Stops mic, speech recognition, and WebSocket without calling the backend. */
+  const cleanupLiveRecording = () => {
     setIsRecording(false);
 
     if (recognitionRef.current) {
@@ -329,9 +397,9 @@ export default function LiveScribe() {
 
     if (socketRef.current) {
       socketRef.current.close();
+      socketRef.current = null;
     }
 
-    // Stop MediaRecorder and wait for the final blob
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"
@@ -344,6 +412,11 @@ export default function LiveScribe() {
     if (audioContextRef.current) audioContextRef.current.close();
     setAudioLevels(new Array(20).fill(0));
     setInterimTranscript("");
+  };
+
+  const handleStopRecording = async () => {
+    addUsage(sessionTime);
+    cleanupLiveRecording();
 
     setIsProcessing(true);
 
@@ -364,15 +437,24 @@ export default function LiveScribe() {
       formData.append("session_id", sessionIdRef.current);
       formData.append("template", activeTemplate);
 
-      // 2. Call the new high-fidelity processing endpoint
+      // 2. Diarized transcription + clinical note (same response shape as before)
       const API_BASE =
         process.env.NEXT_PUBLIC_SCRIBE_SERVICE_URL || "http://127.0.0.1:8001";
-      const response = await fetch(`${API_BASE}/process-audio`, {
+      const response = await fetch(`${API_BASE}/scribe/complete-session`, {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Failed to process audio");
+      if (!response.ok) {
+        let detail = `HTTP ${response.status}`;
+        try {
+          const errBody = await response.json();
+          if (errBody?.detail) detail = String(errBody.detail);
+        } catch {
+          /* ignore */
+        }
+        throw new Error(detail);
+      }
 
       const data = await response.json();
 
@@ -396,11 +478,20 @@ export default function LiveScribe() {
       setBillingCodes(data.billing_codes || []);
       setPatientSummary(data.patient_summary || "");
       setRawTranscript(data.raw_transcript || "");
+      setSpeakerUtterances(Array.isArray(data.utterances) ? data.utterances : []);
+      setDiarizationEnabled(Boolean(data.diarization_enabled));
 
       toast.success("Professional clinical report generated!");
     } catch (err) {
       console.error("Error generating report:", err);
-      toast.error("Failed to generate report. Check your OpenAI API key.");
+      const raw =
+        err instanceof Error ? err.message : "Unknown error";
+      const isNetwork =
+        /fetch|Failed to fetch|NetworkError|ECONNREFUSED|Load failed/i.test(raw);
+      const userMsg = isNetwork
+        ? "Could not reach the transcription service. Please check your connection and try again."
+        : "Failed to generate report. Please try again or contact support.";
+      toast.error(userMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -443,6 +534,7 @@ export default function LiveScribe() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           userId: user.id,
@@ -452,6 +544,9 @@ export default function LiveScribe() {
             template: activeTemplate,
             billingCodes: billingCodes,
             patientSummary: patientSummary,
+            speakerUtterances:
+              speakerUtterances.length > 0 ? speakerUtterances : undefined,
+            diarizationEnabled,
           },
         }),
       });
@@ -477,6 +572,8 @@ export default function LiveScribe() {
       setBillingCodes([]);
       setPatientSummary("");
       setRawTranscript("");
+      setSpeakerUtterances([]);
+      setDiarizationEnabled(false);
       setTranscriptChunks([]);
       setSessionTime(0);
       setCurrentSessionId(null);
@@ -488,6 +585,7 @@ export default function LiveScribe() {
 
   const handleDiscardActiveSession = () => {
     setDiscardAction(() => () => {
+      addUsage(sessionTime);
       setIsRecording(false);
       setIsPaused(false);
 
@@ -622,7 +720,12 @@ export default function LiveScribe() {
             {!isRecording ? (
               <button
                 onClick={handleStartRecording}
-                className="h-20 w-20 rounded-full bg-trust-blue text-white flex items-center justify-center shadow-[0_20px_50px_-15px_rgba(0,82,204,0.5)] hover:scale-105 transition-all"
+                disabled={getRemainingUsage() <= 0}
+                className={`h-20 w-20 rounded-full text-white flex items-center justify-center transition-all ${
+                  getRemainingUsage() <= 0
+                    ? "bg-slate-300 dark:bg-slate-700 cursor-not-allowed"
+                    : "bg-trust-blue shadow-[0_20px_50px_-15px_rgba(0,82,204,0.5)] hover:scale-105"
+                }`}
               >
                 <MicrophoneIcon className="w-10 h-10" />
               </button>
@@ -663,8 +766,50 @@ export default function LiveScribe() {
           <p className="text-slate-500 dark:text-slate-400 font-medium">
             {isRecording
               ? "Doxia is listening ambiently..."
-              : "Click the microphone to start capturing."}
+              : getRemainingUsage() <= 0
+                ? "Usage limit reached. Contact support for more time."
+                : "Click the microphone to start capturing."}
           </p>
+
+          {/* Session & Usage Limits */}
+          <div className="w-full max-w-sm space-y-2">
+            {isRecording && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Session</span>
+                  <span>{formatTime(sessionTime)} / {formatTime(SESSION_CAP_SECONDS)}</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      sessionTime / SESSION_CAP_SECONDS > 0.9
+                        ? "bg-rose-500"
+                        : sessionTime / SESSION_CAP_SECONDS > 0.75
+                          ? "bg-amber-500"
+                          : "bg-trust-blue"
+                    }`}
+                    style={{ width: `${Math.min(100, (sessionTime / SESSION_CAP_SECONDS) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span>Total Usage</span>
+                <span>{formatUsageTime(getTotalUsage() + (isRecording ? sessionTime : 0))} / {formatUsageTime(TOTAL_USAGE_CAP_SECONDS)}</span>
+              </div>
+              <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    (getTotalUsage() + (isRecording ? sessionTime : 0)) / TOTAL_USAGE_CAP_SECONDS > 0.9
+                      ? "bg-rose-500"
+                      : "bg-emerald-500"
+                  }`}
+                  style={{ width: `${Math.min(100, ((getTotalUsage() + (isRecording ? sessionTime : 0)) / TOTAL_USAGE_CAP_SECONDS) * 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
 
           {isRecording && (
             <div className="h-12 flex items-center gap-1.5 mb-4">
@@ -682,7 +827,7 @@ export default function LiveScribe() {
           {isRecording && (
             <div className="w-full max-w-lg bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 text-left border border-slate-200 dark:border-slate-800">
               <p className="text-[10px] font-black tracking-widest text-trust-blue uppercase mb-2">
-                Live Transcript (Scrubbed)
+                Live Preview (Scrubbed)
               </p>
               <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
                 {transcriptChunks.length === 0 && !interimTranscript && (
@@ -818,6 +963,69 @@ export default function LiveScribe() {
                 })}
               </div>
 
+              {speakerUtterances.length > 0 && (
+                <div className="card p-6 space-y-4 border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/30 dark:bg-indigo-950/20">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <MicrophoneIcon className="w-4 h-4 text-indigo-500" />
+                      <span className="text-[10px] font-black tracking-widest text-indigo-600 dark:text-indigo-400 uppercase">
+                        Full Encounter Conversation
+                      </span>
+                    </div>
+                    {diarizationEnabled ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        Speakers identified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase">
+                        Timestamps only
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    {speakerUtterances.map((u, i) => {
+                      const hasSpeaker =
+                        u.speaker != null && u.speaker !== "";
+                      const mins = Math.floor(u.start / 60);
+                      const secs = Math.floor(u.start % 60);
+                      const ts = `${mins}:${secs
+                        .toString()
+                        .padStart(2, "0")}`;
+                      return (
+                        <div
+                          key={i}
+                          className="flex gap-3 items-start group"
+                        >
+                          <span className="text-[10px] font-mono text-slate-400 pt-1 w-10 shrink-0 text-right">
+                            {ts}
+                          </span>
+                          <div
+                            className={`flex-1 rounded-xl px-4 py-2.5 ${
+                              hasSpeaker
+                                ? i % 2 === 0
+                                  ? "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                                  : "bg-trust-blue/5 dark:bg-trust-blue/10 border border-trust-blue/10"
+                                : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                            }`}
+                          >
+                            {hasSpeaker && (
+                              <span className="text-[10px] font-black tracking-widest uppercase text-trust-blue block mb-1">
+                                {u.speaker}
+                              </span>
+                            )}
+                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                              {u.text}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Admin Package: Billing Codes & Patient Summary */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
                 <div className="card p-6 space-y-4 border-trust-blue/10 bg-trust-blue/5">
@@ -873,38 +1081,60 @@ export default function LiveScribe() {
 
               <div className="card p-6 space-y-6">
                 <div className="space-y-4">
-                  <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-trust-blue/5 hover:border-trust-blue/20 border border-transparent transition-all group">
+                  <button
+                    onClick={() => {
+                      if (!generatedNote) return;
+                      const sections = TEMPLATES[activeTemplate].sections;
+                      const text = sections
+                        .map((s) => `${s.toUpperCase()}\n${generatedNote[s] || generatedNote[s.toLowerCase()] || generatedNote[s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()] || ""}`)
+                        .join("\n\n");
+                      navigator.clipboard.writeText(text).then(() => toast.success("Copied to clipboard!"));
+                    }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-trust-blue/5 hover:border-trust-blue/20 border border-transparent transition-all group"
+                  >
                     <span className="font-bold text-slate-700 dark:text-slate-200">
                       Copy to Clipboard
                     </span>
                     <ClipboardIcon className="w-5 h-5 text-slate-400 group-hover:text-trust-blue" />
                   </button>
-                  <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-emerald-500/5 hover:border-emerald-500/20 border border-transparent transition-all group">
+                  <div className="relative w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-transparent opacity-60 cursor-not-allowed">
                     <span className="font-bold text-slate-700 dark:text-slate-200">
                       Sync to Epic EHR
                     </span>
-                    <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
-                  </button>
+                    <span className="text-[8px] font-black uppercase tracking-tighter bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-500 dark:text-slate-400">
+                      Soon
+                    </span>
+                  </div>
                 </div>
 
                 <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">
                     Generate Extra
                   </p>
-                  <button className="w-full text-left p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all">
-                    <p className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                      Referral Letter
-                    </p>
+                  <div className="relative w-full text-left p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 opacity-60 cursor-not-allowed">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-sm text-slate-800 dark:text-slate-100">
+                        Referral Letter
+                      </p>
+                      <span className="text-[8px] font-black uppercase tracking-tighter bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md text-slate-400">
+                        Soon
+                      </span>
+                    </div>
                     <p className="text-xs text-slate-500">Based on this plan</p>
-                  </button>
-                  <button className="w-full text-left p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all">
-                    <p className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                      Patient Summary
-                    </p>
+                  </div>
+                  <div className="relative w-full text-left p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 opacity-60 cursor-not-allowed">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-sm text-slate-800 dark:text-slate-100">
+                        Patient Summary
+                      </p>
+                      <span className="text-[8px] font-black uppercase tracking-tighter bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md text-slate-400">
+                        Soon
+                      </span>
+                    </div>
                     <p className="text-xs text-slate-500">
                       Layman terms version
                     </p>
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>

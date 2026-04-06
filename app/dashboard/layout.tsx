@@ -109,14 +109,19 @@ export default function DashboardLayout({
         } border-r border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 transition-all duration-300 flex flex-col z-30`}
       >
         <div className="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-800/50">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-trust-blue flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-lg italic">d</span>
             </div>
             {isSidebarOpen && (
-              <span className="font-bold text-xl text-slate-900 dark:text-white tracking-tight">
-                doxia
-              </span>
+              <>
+                <span className="font-bold text-xl text-slate-900 dark:text-white tracking-tight">
+                  doxia
+                </span>
+                <span className="text-[8px] font-black uppercase tracking-tighter bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md">
+                  Beta
+                </span>
+              </>
             )}
           </Link>
         </div>

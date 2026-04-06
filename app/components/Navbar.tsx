@@ -50,7 +50,7 @@ export default function Navbar() {
                 href="/signup"
                 className="px-4 py-2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold hover:opacity-90 transition-colors"
               >
-                Get Early Access
+                Try Free Beta
               </Link>
               <ThemeToggle />
             </div>
@@ -112,7 +112,7 @@ export default function Navbar() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="block w-full text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-colors"
               >
-                Get Early Access
+                Try Free Beta
               </Link>
             </div>
           )}

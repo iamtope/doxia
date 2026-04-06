@@ -41,10 +41,10 @@ export default function Terms() {
             </p>
 
             <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-slate-100">
-              Lifetime Access
+              Beta Access &amp; Usage Limits
             </h2>
             <p className="text-slate-600 dark:text-slate-400 mb-8">
-              The Founder's Deal provides lifetime access to core features. Future premium features may require additional payment.
+              During the beta period, Doxia is free to use with fair-use limits: 30-minute session cap and 2-hour total monthly usage per account. These limits help us manage costs while providing the best possible experience.
             </p>
 
             <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-slate-100">
