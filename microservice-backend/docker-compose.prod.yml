@@ -40,11 +40,48 @@ services:
       context: ./api-gateway
     depends_on:
       - user-service
+      - ehr-service
     environment:
       USER_SERVICE_URL: http://user-service:3002/users
+      EHR_SERVICE_URL: http://ehr-service:3004/ehr
       CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
       - "3003:3003"
+    restart: unless-stopped
+
+  ehr-service:
+    build:
+      context: ./ehr-service
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-doxxia_users}
+      TYPEORM_SYNC: "false"
+      JWT_SECRET: ${JWT_SECRET}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      EHR_FRONTEND_SUCCESS_URL: ${EHR_FRONTEND_SUCCESS_URL}
+      EHR_FRONTEND_ERROR_URL: ${EHR_FRONTEND_ERROR_URL}
+      # Epic
+      EPIC_CLIENT_ID: ${EPIC_CLIENT_ID:-}
+      EPIC_CLIENT_SECRET: ${EPIC_CLIENT_SECRET:-}
+      EPIC_REDIRECT_URI: ${EPIC_REDIRECT_URI:-}
+      EPIC_FHIR_BASE_URL: ${EPIC_FHIR_BASE_URL:-}
+      EPIC_AUTHORIZE_URL: ${EPIC_AUTHORIZE_URL:-}
+      EPIC_TOKEN_URL: ${EPIC_TOKEN_URL:-}
+      EPIC_SCOPES: ${EPIC_SCOPES:-}
+      # Cerner / Oracle Health
+      CERNER_CLIENT_ID: ${CERNER_CLIENT_ID:-}
+      CERNER_CLIENT_SECRET: ${CERNER_CLIENT_SECRET:-}
+      CERNER_REDIRECT_URI: ${CERNER_REDIRECT_URI:-}
+      CERNER_FHIR_BASE_URL: ${CERNER_FHIR_BASE_URL:-}
+      CERNER_AUTHORIZE_URL: ${CERNER_AUTHORIZE_URL:-}
+      CERNER_TOKEN_URL: ${CERNER_TOKEN_URL:-}
+      CERNER_SCOPES: ${CERNER_SCOPES:-}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     restart: unless-stopped
 
   scribe-service:

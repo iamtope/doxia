@@ -48,14 +48,56 @@ services:
       context: ./api-gateway
     depends_on:
       - user-service
+      - ehr-service
     environment:
       USER_SERVICE_URL: http://user-service:3002/users
+      EHR_SERVICE_URL: http://ehr-service:3004/ehr
       CORS_ORIGINS: "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001"
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "3003:3003"
     volumes:
       - ./api-gateway/src:/app/src
+    command: ["npm", "run", "start:dev"]
+
+  ehr-service:
+    build:
+      context: ./ehr-service
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: doxxia_users
+      TYPEORM_SYNC: "true"
+      JWT_SECRET: ${JWT_SECRET}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      EHR_FRONTEND_SUCCESS_URL: ${EHR_FRONTEND_SUCCESS_URL:-http://localhost:3000/dashboard/integrations?ehr=connected}
+      EHR_FRONTEND_ERROR_URL: ${EHR_FRONTEND_ERROR_URL:-http://localhost:3000/dashboard/integrations?ehr=error}
+      # --- Epic ---
+      EPIC_CLIENT_ID: ${EPIC_CLIENT_ID:-}
+      EPIC_CLIENT_SECRET: ${EPIC_CLIENT_SECRET:-}
+      EPIC_REDIRECT_URI: ${EPIC_REDIRECT_URI:-http://localhost:3004/ehr/epic/callback}
+      EPIC_FHIR_BASE_URL: ${EPIC_FHIR_BASE_URL:-}
+      EPIC_AUTHORIZE_URL: ${EPIC_AUTHORIZE_URL:-}
+      EPIC_TOKEN_URL: ${EPIC_TOKEN_URL:-}
+      EPIC_SCOPES: ${EPIC_SCOPES:-}
+      # --- Cerner / Oracle Health ---
+      CERNER_CLIENT_ID: ${CERNER_CLIENT_ID:-}
+      CERNER_CLIENT_SECRET: ${CERNER_CLIENT_SECRET:-}
+      CERNER_REDIRECT_URI: ${CERNER_REDIRECT_URI:-http://localhost:3004/ehr/cerner/callback}
+      CERNER_FHIR_BASE_URL: ${CERNER_FHIR_BASE_URL:-}
+      CERNER_AUTHORIZE_URL: ${CERNER_AUTHORIZE_URL:-}
+      CERNER_TOKEN_URL: ${CERNER_TOKEN_URL:-}
+      CERNER_SCOPES: ${CERNER_SCOPES:-}
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001"
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./ehr-service/src:/app/src
     command: ["npm", "run", "start:dev"]
 
   scribe-service:

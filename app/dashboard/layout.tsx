@@ -75,10 +75,9 @@ export default function DashboardLayout({
     },
     {
       icon: ArrowPathIcon,
-      label: "EHR Sync",
-      href: "#",
-      active: false,
-      comingSoon: true,
+      label: "EHR Integrations",
+      href: "/dashboard/integrations",
+      active: pathname?.startsWith("/dashboard/integrations") ?? false,
     },
   ];
 
