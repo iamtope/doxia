@@ -42,12 +42,6 @@ export default function DashboardLayout({
 
   const navItems = [
     {
-      icon: Squares2X2Icon,
-      label: "Dashboard",
-      href: "/dashboard",
-      active: pathname === "/dashboard",
-    },
-    {
       icon: MicrophoneIcon,
       label: "Live Scribe",
       href: "/dashboard/scribe",
@@ -62,9 +56,8 @@ export default function DashboardLayout({
     {
       icon: QueueListIcon,
       label: "Templates",
-      href: "#",
-      active: false,
-      comingSoon: true,
+      href: "/dashboard/templates",
+      active: pathname === "/dashboard/templates",
     },
     {
       icon: UsersIcon,

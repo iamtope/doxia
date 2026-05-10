@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MicrophoneIcon,
@@ -13,27 +14,20 @@ import {
   CheckCircleIcon,
   ChevronDownIcon,
   TrashIcon,
+  CalendarDaysIcon,
+  GlobeAltIcon,
+  RectangleStackIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
-
-const TEMPLATES = {
-  SOAP: {
-    name: "SOAP",
-    description: "Subjective, Objective, Assessment, Plan",
-    sections: ["SUBJECTIVE", "OBJECTIVE", "ASSESSMENT", "PLAN"],
-  },
-  DAP: {
-    name: "DAP",
-    description: "Data, Assessment, Plan",
-    sections: ["DATA", "ASSESSMENT", "PLAN"],
-  },
-  BIRP: {
-    name: "BIRP",
-    description: "Behavior, Intervention, Response, Plan",
-    sections: ["BEHAVIOR", "INTERVENTION", "RESPONSE", "PLAN"],
-  },
-};
+import {
+  getTemplateById,
+  listTemplatesForScribe,
+  type TemplateDef,
+  BUILTIN_TEMPLATES,
+} from "../../lib/clinical-templates";
+import { getTrialDaysRemaining, SCRIBE_LANGUAGES } from "../../lib/scribe-session";
 
 const SESSION_CAP_SECONDS = 30 * 60; // 30 minutes
 const TOTAL_USAGE_CAP_SECONDS = 2 * 60 * 60; // 2 hours
@@ -69,8 +63,34 @@ export default function LiveScribe() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [activeTemplate, setActiveTemplate] =
-    useState<keyof typeof TEMPLATES>("SOAP");
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState("builtin-soap");
+  const activeDef = useMemo<TemplateDef>(
+    () =>
+      getTemplateById(selectedTemplateId) ?? BUILTIN_TEMPLATES[0],
+    [selectedTemplateId],
+  );
+
+  const [sessionTitle, setSessionTitle] = useState("Add patient details");
+  const [speechLang, setSpeechLang] = useState("en-US");
+  const [scribbleTab, setScribbleTab] = useState<"context" | "notes">("notes");
+  const [encounterContext, setEncounterContext] = useState("");
+  const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [trialDaysLeft] = useState(() => getTrialDaysRemaining());
+  const [nowLabel, setNowLabel] = useState("");
+  const templateMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const templatePickerOptions = useMemo(() => {
+    const q = templateSearch.trim().toLowerCase();
+    const all = listTemplatesForScribe();
+    if (!q) return all;
+    return all.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q),
+    );
+  }, [templateSearch]);
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>("");
@@ -121,6 +141,30 @@ export default function LiveScribe() {
       console.error("Error enumerating devices:", err);
     }
   };
+
+  useEffect(() => {
+    const fmt = () =>
+      new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(new Date());
+    setNowLabel(fmt());
+    const id = setInterval(() => setNowLabel(fmt()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!templateMenuRef.current?.contains(e.target as Node)) {
+        setTemplateMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
 
   useEffect(() => {
     getDevices();
@@ -318,8 +362,8 @@ export default function LiveScribe() {
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true; // Changed to true for better responsiveness
-      recognitionRef.current.lang = "en-US";
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = speechLang;
 
       recognitionRef.current.onstart = () => {
         console.log("Speech recognition service has started");
@@ -435,7 +479,15 @@ export default function LiveScribe() {
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
       formData.append("session_id", sessionIdRef.current);
-      formData.append("template", activeTemplate);
+      const templateSlug = activeDef.name.replace(/\s+/g, "_").slice(0, 64);
+      formData.append("template", templateSlug);
+      formData.append("sections_json", JSON.stringify(activeDef.sections));
+      if (activeDef.instructions?.trim()) {
+        formData.append("ai_style", activeDef.instructions.trim());
+      }
+      if (encounterContext.trim()) {
+        formData.append("clinical_context", encounterContext.trim());
+      }
 
       // 2. Diarized transcription + clinical note (same response shape as before)
       const API_BASE =
@@ -462,9 +514,8 @@ export default function LiveScribe() {
       const structured = data.structured_note || {};
       setGeneratedNote(structured);
 
-      // Initialize editNote with correct keys for the current template
       const initialEditNote: Record<string, string> = {};
-      TEMPLATES[activeTemplate].sections.forEach((sectionId) => {
+      activeDef.sections.forEach((sectionId) => {
         initialEditNote[sectionId] =
           structured[sectionId] ||
           structured[sectionId.toLowerCase()] ||
@@ -507,7 +558,7 @@ export default function LiveScribe() {
       // to ensure textareas are populated even if AI used different casing
       if (generatedNote) {
         const syncedNote: Record<string, string> = {};
-        TEMPLATES[activeTemplate].sections.forEach((sectionId) => {
+        activeDef.sections.forEach((sectionId) => {
           syncedNote[sectionId] =
             generatedNote[sectionId] ||
             generatedNote[sectionId.toLowerCase()] ||
@@ -541,7 +592,7 @@ export default function LiveScribe() {
           note: {
             rawTranscript: rawTranscript,
             structuredNote: generatedNote,
-            template: activeTemplate,
+            template: `${activeDef.name} (${activeDef.id})`,
             billingCodes: billingCodes,
             patientSummary: patientSummary,
             speakerUtterances:
@@ -620,239 +671,482 @@ export default function LiveScribe() {
     setIsDiscardModalOpen(true);
   };
 
+  const handleNewSession = () => {
+    if (isRecording) {
+      toast.error("Stop or discard the recording first.");
+      return;
+    }
+    setGeneratedNote(null);
+    setBillingCodes([]);
+    setPatientSummary("");
+    setRawTranscript("");
+    setSpeakerUtterances([]);
+    setDiarizationEnabled(false);
+    setTranscriptChunks([]);
+    setSessionTime(0);
+    setCurrentSessionId(null);
+    setSessionTitle("Add patient details");
+    setEncounterContext("");
+    toast.success("New session");
+  };
+
+  const sourceLabel = (s: TemplateDef["source"]) =>
+    s === "builtin" ? "Standard" : s === "community" ? "Community" : "Yours";
+
+  const transcriptionQuotaSecondsLeft = Math.max(
+    0,
+    getRemainingUsage() - (isRecording ? sessionTime : 0),
+  );
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Live Scribe
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400">
-            Capture patient encounters ambiently.
-          </p>
+    <div className="max-w-5xl mx-auto pb-24 space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:justify-between">
+        <div className="flex-1 min-w-0 flex flex-wrap items-center gap-3">
+          <input
+            value={sessionTitle}
+            onChange={(e) => setSessionTitle(e.target.value)}
+            placeholder="Session title"
+            className="flex-1 min-w-[200px] text-2xl md:text-3xl font-serif font-semibold bg-transparent border-b border-slate-200/80 dark:border-slate-700 focus:border-trust-blue focus:outline-none text-slate-900 dark:text-white py-1"
+          />
+          <button
+            type="button"
+            disabled={isRecording || isProcessing}
+            onClick={handleNewSession}
+            title="Clear draft session"
+            className="p-2.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors disabled:opacity-40"
+          >
+            <TrashIcon className="w-6 h-6" />
+          </button>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Microphone Selector */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <div className="relative group">
             <select
               disabled={isRecording}
               value={selectedMicrophone}
               onChange={(e) => setSelectedMicrophone(e.target.value)}
-              className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2 pr-10 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-trust-blue/20 outline-none transition-all disabled:opacity-50 cursor-pointer"
+              className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 pr-9 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-trust-blue/15 outline-none max-w-[200px]"
             >
               {audioDevices.map((device) => (
                 <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Microphone ${device.deviceId.slice(0, 5)}`}
+                  {device.label || `Mic ${device.deviceId.slice(0, 5)}`}
                 </option>
               ))}
             </select>
-            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           </div>
-
-          <div
-            className={`pill ${
-              isRecording
-                ? isPaused
-                  ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                  : "bg-rose-500/10 text-rose-600 border-rose-500/20"
-                : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-            } text-xs font-bold uppercase tracking-tighter`}
+          <button
+            type="button"
+            onClick={handleNewSession}
+            disabled={isRecording}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/80 disabled:opacity-40"
           >
-            <div
-              className={`w-1.5 h-1.5 rounded-full ${
-                isRecording
-                  ? isPaused
-                    ? "bg-amber-500"
-                    : "bg-rose-500 animate-pulse"
-                  : "bg-emerald-500"
-              } mr-2`}
-            />
-            {isRecording
-              ? isPaused
-                ? "Recording Paused"
-                : "Streaming Audio"
-              : "Secure Connection"}
-          </div>
-        </div>
-      </div>
-
-      {/* Template Selection Tabs */}
-      <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900/50 p-1 rounded-2xl w-fit">
-        {(Object.keys(TEMPLATES) as Array<keyof typeof TEMPLATES>).map(
-          (key) => (
-            <button
-              key={key}
-              onClick={() => setActiveTemplate(key)}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTemplate === key
-                  ? "bg-white dark:bg-slate-800 text-trust-blue shadow-sm"
-                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-              }`}
-            >
-              {TEMPLATES[key].name}
-            </button>
-          )
-        )}
-      </div>
-
-      {/* Recording Control Card */}
-      <div className="card p-8 relative overflow-hidden group">
-        <div className="absolute inset-0 bg-gradient-to-r from-trust-blue/5 to-indigo-500/5 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col items-center text-center gap-6">
-          <div className="space-y-2">
-            <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-              Active Session
-            </div>
-            <div
-              className={`text-6xl font-mono font-bold tracking-tighter ${
-                isRecording
-                  ? "text-rose-500"
-                  : "text-slate-300 dark:text-slate-700"
-              }`}
-            >
-              {formatTime(sessionTime)}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
+            Create
+          </button>
+          <div className="flex rounded-xl overflow-hidden shadow-lg shadow-emerald-500/15">
             {!isRecording ? (
               <button
+                type="button"
                 onClick={handleStartRecording}
-                disabled={getRemainingUsage() <= 0}
-                className={`h-20 w-20 rounded-full text-white flex items-center justify-center transition-all ${
-                  getRemainingUsage() <= 0
-                    ? "bg-slate-300 dark:bg-slate-700 cursor-not-allowed"
-                    : "bg-trust-blue shadow-[0_20px_50px_-15px_rgba(0,82,204,0.5)] hover:scale-105"
-                }`}
+                disabled={getRemainingUsage() <= 0 || isProcessing}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold disabled:opacity-40"
               >
-                <MicrophoneIcon className="w-10 h-10" />
+                <MicrophoneIcon className="w-5 h-5" />
+                Transcribe
               </button>
             ) : (
-              <div className="flex items-center gap-8">
-                <button
-                  onClick={handleDiscardActiveSession}
-                  className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 flex items-center justify-center transition-all group"
-                  title="Discard Recording"
-                >
-                  <TrashIcon className="w-7 h-7 group-hover:scale-110 transition-transform" />
-                </button>
-
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={handlePauseResume}
-                    className={`h-16 w-16 rounded-full ${
-                      isPaused ? "bg-emerald-500" : "bg-amber-500"
-                    } text-white flex items-center justify-center shadow-lg hover:scale-105 transition-all`}
-                  >
-                    {isPaused ? (
-                      <PlayIcon className="w-8 h-8" />
-                    ) : (
-                      <PauseIcon className="w-8 h-8" />
-                    )}
-                  </button>
-                  <button
-                    onClick={handleStopRecording}
-                    className="h-20 w-20 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-[0_20px_50px_-15px_rgba(244,63,94,0.5)] hover:scale-105 transition-all animate-pulse"
-                  >
-                    <StopIcon className="w-10 h-10" />
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={handleStopRecording}
+                disabled={isProcessing}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold disabled:opacity-50"
+              >
+                <StopIcon className="w-5 h-5" />
+                Finish &amp; generate
+              </button>
             )}
+            <button
+              type="button"
+              disabled={!isRecording || isProcessing}
+              onClick={handlePauseResume}
+              className="px-3 bg-emerald-600/90 hover:bg-emerald-700 text-white border-l border-emerald-400/40 disabled:opacity-30"
+              title={isPaused ? "Resume" : "Pause"}
+            >
+              {isPaused ? (
+                <PlayIcon className="w-5 h-5" />
+              ) : (
+                <PauseIcon className="w-5 h-5" />
+              )}
+            </button>
           </div>
-
-          <p className="text-slate-500 dark:text-slate-400 font-medium">
-            {isRecording
-              ? "Doxia is listening ambiently..."
-              : getRemainingUsage() <= 0
-                ? "Usage limit reached. Contact support for more time."
-                : "Click the microphone to start capturing."}
-          </p>
-
-          {/* Session & Usage Limits */}
-          <div className="w-full max-w-sm space-y-2">
-            {isRecording && (
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Session</span>
-                  <span>{formatTime(sessionTime)} / {formatTime(SESSION_CAP_SECONDS)}</span>
-                </div>
-                <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      sessionTime / SESSION_CAP_SECONDS > 0.9
-                        ? "bg-rose-500"
-                        : sessionTime / SESSION_CAP_SECONDS > 0.75
-                          ? "bg-amber-500"
-                          : "bg-trust-blue"
-                    }`}
-                    style={{ width: `${Math.min(100, (sessionTime / SESSION_CAP_SECONDS) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            )}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>Total Usage</span>
-                <span>{formatUsageTime(getTotalUsage() + (isRecording ? sessionTime : 0))} / {formatUsageTime(TOTAL_USAGE_CAP_SECONDS)}</span>
-              </div>
-              <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    (getTotalUsage() + (isRecording ? sessionTime : 0)) / TOTAL_USAGE_CAP_SECONDS > 0.9
-                      ? "bg-rose-500"
-                      : "bg-emerald-500"
-                  }`}
-                  style={{ width: `${Math.min(100, ((getTotalUsage() + (isRecording ? sessionTime : 0)) / TOTAL_USAGE_CAP_SECONDS) * 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {isRecording && (
-            <div className="h-12 flex items-center gap-1.5 mb-4">
-              {audioLevels.map((level, i) => (
-                <motion.div
-                  key={i}
-                  animate={{ height: Math.max(4, level * 40) }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="w-1.5 bg-trust-blue rounded-full opacity-60"
-                />
-              ))}
-            </div>
-          )}
-
-          {isRecording && (
-            <div className="w-full max-w-lg bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6 text-left border border-slate-200 dark:border-slate-800">
-              <p className="text-[10px] font-black tracking-widest text-trust-blue uppercase mb-2">
-                Live Preview (Scrubbed)
-              </p>
-              <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                {transcriptChunks.length === 0 && !interimTranscript && (
-                  <p className="text-slate-400 italic text-sm">
-                    Waiting for speech...
-                  </p>
-                )}
-                {transcriptChunks.map((chunk, i) => (
-                  <p
-                    key={i}
-                    className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium"
-                  >
-                    {chunk}
-                  </p>
-                ))}
-                {interimTranscript && (
-                  <p className="text-sm text-slate-400 leading-relaxed font-medium italic">
-                    {interimTranscript}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-3 md:gap-5 text-sm text-slate-600 dark:text-slate-400">
+        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5">
+          <CalendarDaysIcon className="w-4 h-4 text-slate-500" />
+          <span className="font-medium text-slate-800 dark:text-slate-100">
+            {nowLabel || "…"}
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5">
+          <GlobeAltIcon className="w-4 h-4 text-slate-500" />
+          <select
+            value={speechLang}
+            onChange={(e) => setSpeechLang(e.target.value)}
+            disabled={isRecording}
+            className="bg-transparent font-medium text-slate-800 dark:text-slate-100 text-sm outline-none cursor-pointer disabled:opacity-50"
+          >
+            {SCRIBE_LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </span>
+        <span
+          className="inline-flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/40 px-3 py-1.5 text-violet-800 dark:text-violet-200 font-semibold text-xs"
+          title="Beta clinician trial allowance"
+        >
+          {trialDaysLeft} days left · trial
+        </span>
+        <span
+          className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 dark:border-teal-900 bg-teal-50/90 dark:bg-teal-950/40 px-3 py-1.5 text-teal-900 dark:text-teal-100 text-xs font-semibold"
+          title="Total ambient transcription time remaining this beta period"
+        >
+          <span className="text-teal-700/80 dark:text-teal-300/90 font-medium">
+            Recording allowance
+          </span>
+          <span className="font-mono tabular-nums font-bold">
+            {formatUsageTime(transcriptionQuotaSecondsLeft)} left
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-3 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-1.5">
+          <ClockIcon className="w-4 h-4 text-slate-500 shrink-0" />
+          <span
+            className={`font-mono font-bold tracking-tight ${
+              isRecording ? "text-rose-500" : "text-slate-500"
+            }`}
+          >
+            {formatTime(sessionTime)}
+          </span>
+          <div className="flex items-center gap-0.5 h-8">
+            {([0.2, 0.45, 0.65, 0.85, 1] as const).map((m, i) => (
+              <span
+                key={i}
+                className={`w-1 rounded-full transition-all duration-150 ${
+                  isRecording && !isPaused
+                    ? audioLevels[i * 4] !== undefined &&
+                      audioLevels[i * 4] > m * 0.35
+                      ? "bg-emerald-500 h-5"
+                      : "bg-slate-200 dark:bg-slate-600 h-2"
+                    : "bg-slate-200 dark:bg-slate-600 h-2"
+                }`}
+              />
+            ))}
+          </div>
+        </span>
+      </div>
+
+      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
+        {(["context", "notes"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setScribbleTab(tab)}
+            className={`px-5 py-3 text-sm font-semibold capitalize border-b-2 -mb-px transition-colors ${
+              scribbleTab === tab
+                ? "border-trust-blue text-trust-blue"
+                : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {scribbleTab === "context" && (
+        <div className="card p-6 space-y-3">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+            Extra context sent to AI with this encounter
+          </p>
+          <textarea
+            value={encounterContext}
+            onChange={(e) => setEncounterContext(e.target.value)}
+            rows={10}
+            disabled={isRecording}
+            placeholder="Paste prior visit summary, meds, goals, interpreter needs, billing context…"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950 px-4 py-3 text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-trust-blue/20 outline-none resize-y disabled:opacity-60"
+          />
+        </div>
+      )}
+
+      {scribbleTab === "notes" && (
+        <div className="card overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-trust-blue/25 to-transparent" />
+          <div className="p-5 md:p-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
+              <div className="relative" ref={templateMenuRef}>
+                <button
+                  type="button"
+                  disabled={isRecording || isProcessing}
+                  onClick={() => setTemplateMenuOpen((o) => !o)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#fcf9f9] dark:bg-slate-800/50 text-sm font-semibold text-slate-900 dark:text-white hover:border-trust-blue/30 transition-colors disabled:opacity-40"
+                >
+                  <RectangleStackIcon className="w-5 h-5 text-slate-500" />
+                  Select a template
+                  <ChevronDownIcon className="w-4 h-4 text-slate-400" />
+                </button>
+                <span className="ml-3 text-sm font-medium text-slate-500">
+                  Active:{" "}
+                  <span className="text-trust-blue font-semibold">
+                    {activeDef.name}
+                  </span>
+                </span>
+
+                <AnimatePresence>
+                  {templateMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      className="absolute left-0 top-full mt-2 z-50 w-[min(100vw-2rem,28rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden"
+                    >
+                      <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+                        <input
+                          autoFocus
+                          value={templateSearch}
+                          onChange={(e) => setTemplateSearch(e.target.value)}
+                          placeholder="Search templates…"
+                          className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-trust-blue/15"
+                        />
+                      </div>
+                      <div className="max-h-72 overflow-y-auto p-2">
+                        {templatePickerOptions.length === 0 && (
+                          <p className="text-sm text-slate-500 px-3 py-6 text-center">
+                            No matches. Try Library or create your own —{" "}
+                            <Link
+                              href="/dashboard/templates"
+                              className="text-trust-blue font-semibold"
+                              onClick={() => setTemplateMenuOpen(false)}
+                            >
+                              Manage templates
+                            </Link>
+                          </p>
+                        )}
+                        {templatePickerOptions.map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedTemplateId(t.id);
+                              setTemplateMenuOpen(false);
+                              toast.success(`Template: ${t.name}`);
+                            }}
+                            className={`w-full text-left px-4 py-3 rounded-xl hover:bg-[#fcf9f9] dark:hover:bg-slate-800/80 transition-colors ${
+                              selectedTemplateId === t.id
+                                ? "bg-trust-blue/5 ring-1 ring-trust-blue/20"
+                                : ""
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-slate-900 dark:text-white">
+                                {t.name}
+                              </span>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0">
+                                {sourceLabel(t.source)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                              {t.description}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                      <Link
+                        href="/dashboard/templates"
+                        className="block text-center py-3 text-sm font-semibold text-trust-blue bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800"
+                        onClick={() => setTemplateMenuOpen(false)}
+                      >
+                        Manage in Library →
+                      </Link>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {!isRecording && (
+                <p className="text-xs text-slate-500 max-w-md">
+                  {activeDef.description}.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setScribbleTab("context")}
+                    className="text-trust-blue font-semibold underline-offset-2 hover:underline"
+                  >
+                    Add context
+                  </button>{" "}
+                  anytime before generating.
+                </p>
+              )}
+            </div>
+
+            {!generatedNote && !isProcessing && (
+              <div className="min-h-[220px] flex flex-col items-center justify-center text-center px-6 py-14 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-950/30">
+                <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center mb-4">
+                  <SparklesIcon className="w-7 h-7 text-trust-blue/70" />
+                </div>
+                <p className="text-lg font-serif font-medium text-slate-800 dark:text-slate-100">
+                  Ready when you are.
+                </p>
+                <p className="text-sm text-slate-500 mt-2 max-w-sm">
+                  Transcribe to capture dialogue, then we structure it into{" "}
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {activeDef.name}
+                  </span>
+                  .
+                </p>
+                <div className="flex flex-wrap justify-center gap-3 mt-6">
+                  {!isRecording ? (
+                    <button
+                      type="button"
+                      onClick={handleStartRecording}
+                      disabled={getRemainingUsage() <= 0}
+                      className="px-6 py-3 rounded-xl bg-trust-blue text-white font-bold text-sm shadow-lg shadow-trust-blue/20 hover:brightness-105 disabled:opacity-40"
+                    >
+                      Start recording
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleDiscardActiveSession}
+                        className="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-200"
+                      >
+                        Discard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleStopRecording}
+                        className="px-6 py-3 rounded-xl bg-emerald-500 text-white font-bold text-sm"
+                      >
+                        Finish &amp; generate
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {isRecording && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div
+                    className={`pill ${
+                      isPaused
+                        ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
+                        : "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isPaused ? "bg-amber-500" : "bg-rose-500 animate-pulse"
+                      }`}
+                    />
+                    {isPaused ? "Paused" : "Recording"}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDiscardActiveSession}
+                    className="text-sm font-semibold text-rose-500 hover:underline"
+                  >
+                    Discard recording
+                  </button>
+                </div>
+                <div className="h-14 flex items-end justify-center gap-1.5 py-2">
+                  {audioLevels.map((level, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ height: Math.max(6, level * 48) }}
+                      transition={{ type: "spring", stiffness: 320, damping: 22 }}
+                      className="w-1.5 bg-gradient-to-t from-trust-blue to-indigo-400 rounded-full opacity-80"
+                    />
+                  ))}
+                </div>
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-5 text-left max-h-40 overflow-y-auto">
+                  <p className="text-[10px] font-black tracking-widest text-trust-blue uppercase mb-2">
+                    Live preview
+                  </p>
+                  {transcriptChunks.length === 0 && !interimTranscript && (
+                    <p className="text-sm text-slate-400 italic">
+                      Waiting for speech…
+                    </p>
+                  )}
+                  {transcriptChunks.map((chunk, i) => (
+                    <p
+                      key={i}
+                      className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"
+                    >
+                      {chunk}
+                    </p>
+                  ))}
+                  {interimTranscript && (
+                    <p className="text-sm text-slate-400 italic">
+                      {interimTranscript}
+                    </p>
+                  )}
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3 text-xs text-slate-500">
+                  <div>
+                    <span className="font-bold text-slate-400 uppercase tracking-wider">
+                      Session cap
+                    </span>
+                    <div className="h-1.5 mt-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-trust-blue rounded-full"
+                        style={{
+                          width: `${Math.min(100, (sessionTime / SESSION_CAP_SECONDS) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span>{formatTime(sessionTime)}</span>
+                      <span>{formatTime(SESSION_CAP_SECONDS)}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-400 uppercase tracking-wider">
+                      Total beta usage
+                    </span>
+                    <div className="h-1.5 mt-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            ((getTotalUsage() + sessionTime) /
+                              TOTAL_USAGE_CAP_SECONDS) *
+                              100,
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span>
+                        {formatUsageTime(getTotalUsage() + sessionTime)}
+                      </span>
+                      <span>{formatUsageTime(TOTAL_USAGE_CAP_SECONDS)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <p className="text-center text-[11px] text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        Review AI output before it is relied on clinically. PHI is streamed for
+        transcription and structured summarization according to our beta terms.
+      </p>
 
       <AnimatePresence mode="wait">
         {isProcessing && (
@@ -925,8 +1219,7 @@ export default function LiveScribe() {
               </div>
 
               <div className="space-y-4">
-                {TEMPLATES[activeTemplate].sections.map((sectionId) => {
-                  const sectionKey = sectionId.toLowerCase();
+                {activeDef.sections.map((sectionId) => {
                   return (
                     <div
                       key={sectionId}
@@ -1084,7 +1377,7 @@ export default function LiveScribe() {
                   <button
                     onClick={() => {
                       if (!generatedNote) return;
-                      const sections = TEMPLATES[activeTemplate].sections;
+                      const sections = activeDef.sections;
                       const text = sections
                         .map((s) => `${s.toUpperCase()}\n${generatedNote[s] || generatedNote[s.toLowerCase()] || generatedNote[s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()] || ""}`)
                         .join("\n\n");

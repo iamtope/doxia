@@ -26,9 +26,8 @@ export class EhrGatewayController {
 
   @All('*splat')
   async proxy(@Req() req: Request, @Res() res: Response) {
-    const suffix = req.url.replace(/^\/*/, '');
+    const suffix = req.url.replace(/^\/*/, '').replace(/^ehr\/?/, '');
     const target = `${this.EHR_SERVICE_URL.replace(/\/+$/, '')}/${suffix}`;
-
     const forwardHeaders: Record<string, string> = {};
     if (req.headers['authorization']) {
       forwardHeaders['authorization'] = String(req.headers['authorization']);

@@ -485,18 +485,43 @@ async def transcribe_conversation(
 
 @app.post("/process-audio")
 @app.post("/scribe/process-audio")
+def resolve_template_sections(template: str, sections_json: str | None) -> list[str]:
+    """Prefer JSON list from client for custom/community templates; else built-in lookup."""
+    if sections_json:
+        try:
+            data = json.loads(sections_json)
+            if isinstance(data, list):
+                cleaned = [
+                    str(s).strip()
+                    for s in data
+                    if str(s).strip()
+                ]
+                if cleaned:
+                    return cleaned
+        except json.JSONDecodeError:
+            logger.warning(" [API] Invalid sections_json; falling back to built-in template")
+    cfg = TEMPLATES.get(template, TEMPLATES["SOAP"])
+    return list(cfg["sections"])
+
+
 @app.post("/scribe/complete-session")
 async def process_audio(
     audio: UploadFile = File(...),
     session_id: str = Form(...),
-    template: str = Form("SOAP")
+    template: str = Form("SOAP"),
+    sections_json: str | None = Form(None),
+    ai_style: str | None = Form(None),
+    clinical_context: str | None = Form(None),
 ):
     """
     1. Transcribes audio with speaker diarization (gpt-4o-transcribe-diarize) when available, else Whisper.
     2. Scrubs PII with Spacy.
     3. Summarizes into a medical note with GPT-4o.
     """
-    logger.info(f" [API] Processing audio for session: {session_id} using {template} template")
+    logger.info(
+        f" [API] Processing audio for session: {session_id} using template key={template!r} "
+        f"custom_sections={bool(sections_json)} extra_style={bool(ai_style)}"
+    )
 
     suffix = Path(audio.filename or "recording").suffix or ".webm"
     temp_filename = f"temp_proc_{session_id}_{uuid.uuid4().hex}{suffix}"
@@ -521,24 +546,37 @@ async def process_audio(
         scrub_result = await scrub_pii(scrub_request)
         scrubbed_text = scrub_result["scrubbed_text"]
 
-        sections_list = ", ".join(TEMPLATES.get(template, TEMPLATES["SOAP"])["sections"])
+        sections = resolve_template_sections(template, sections_json)
+        sections_list = ", ".join(sections)
+
+        style_block = ""
+        if ai_style and str(ai_style).strip():
+            style_block = f"\nAdditional style / structure guidance from the template author:\n{str(ai_style).strip()}\n"
 
         system_prompt = f"""
         You are an expert medical scribe. Convert the following transcript into:
-        1. A structured clinical note using the {template} format. 
-           REQUIRED KEYS for the structured_note object: {sections_list}
-        2. A list of relevant ICD-10 Billing Codes.
+        1. A structured note using template "{template}".
+           REQUIRED JSON keys for structured_note (use these keys exactly, uppercase with underscores): {sections_list}
+        2. A list of relevant ICD-10 Billing Codes where clinically appropriate (empty list if none).
         3. A patient-friendly summary in layman's terms.
 
         The transcript may include speaker labels (e.g. A, B, or named roles). Use them to separate who said what clinically when helpful.
-        CRITICAL: The transcript may contain background noise, coughing, or nonsensical words transcribed by the AI. 
-        Filter these out. Focus ONLY on the medical content and clinical dialogue. 
-        Ensure medical accuracy and professional terminology for the note.
+        CRITICAL: The transcript may contain background noise, coughing, or nonsensical words transcribed by the AI.
+        Filter these out. Focus ONLY on clinically relevant dialogue and content unless the template is explicitly non-clinical meeting minutes.
+        {style_block}
         """
         
+        cc = (clinical_context or "").strip()
+        context_block = (
+            f"\nClinician-supplied encounter context (not part of transcript):\n{cc}\n"
+            if cc
+            else ""
+        )
+
         user_prompt = f"""
         Transcript:
         {scrubbed_text}
+        {context_block}
 
         Return the result as a JSON object with the following structure:
         {{
