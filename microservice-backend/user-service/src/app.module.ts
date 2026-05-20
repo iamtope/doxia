@@ -1,14 +1,17 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { GoogleAuthService } from './google-auth.service';
 import { User } from './user.entity';
 import { Note } from './note.entity';
 import { RabbitMQModule } from './rabbitmq.module';
 
 @Module({
   imports: [
+    HttpModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -27,6 +30,6 @@ import { RabbitMQModule } from './rabbitmq.module';
     RabbitMQModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, GoogleAuthService],
 })
 export class AppModule { }

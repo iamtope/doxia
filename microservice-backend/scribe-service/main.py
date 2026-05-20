@@ -1,6 +1,9 @@
 import asyncio
+import base64
+import io
 import json
 import logging
+import mimetypes
 import spacy
 import redis.asyncio as redis
 import os
@@ -8,6 +11,7 @@ from contextlib import asynccontextmanager
 import uuid
 from pathlib import Path
 from typing import Any
+from pypdf import PdfReader
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -366,6 +370,118 @@ app.add_middleware(
 @app.get("/")
 async def health_check():
     return {"status": "healthy", "service": "scribe-service"}
+
+
+NOTE_IMPORT_MAX_BYTES = 10 * 1024 * 1024
+_NOTE_IMAGE_MIMES = frozenset(
+    {
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+    }
+)
+
+
+def _guess_note_mime(filename: str, content_type: str | None) -> str:
+    if content_type and content_type != "application/octet-stream":
+        return content_type.split(";")[0].strip().lower()
+    guessed, _ = mimetypes.guess_type(filename or "")
+    return (guessed or "application/octet-stream").lower()
+
+
+def _extract_plain_text(data: bytes) -> str:
+    return data.decode("utf-8", errors="replace")
+
+
+def _extract_pdf_text(data: bytes) -> str:
+    reader = PdfReader(io.BytesIO(data))
+    parts: list[str] = []
+    for page in reader.pages:
+        text = (page.extract_text() or "").strip()
+        if text:
+            parts.append(text)
+    return "\n\n".join(parts)
+
+
+async def _extract_image_text(data: bytes, mime: str) -> str:
+    b64 = base64.standard_b64encode(data).decode("ascii")
+    data_url = f"data:{mime};base64,{b64}"
+    completion = client.chat.completions.create(
+        model=settings.ai_model_version,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Extract all visible text from this clinical or medical note image. "
+                    "Preserve headings, line breaks, and section labels as they appear. "
+                    "Return plain text only with no commentary."
+                ),
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Extract the full note text from this image.",
+                    },
+                    {"type": "image_url", "image_url": {"url": data_url}},
+                ],
+            },
+        ],
+    )
+    return (completion.choices[0].message.content or "").strip()
+
+
+@app.post("/scribe/extract-note-text")
+async def extract_note_text(file: UploadFile = File(...)):
+    """
+    Extract plain text from an uploaded note (.txt, .pdf, or image) for template import.
+    """
+    data = await file.read()
+    if len(data) > NOTE_IMPORT_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File is too large (max 10 MB).")
+
+    filename = file.filename or "upload"
+    mime = _guess_note_mime(filename, file.content_type)
+    lower = filename.lower()
+
+    try:
+        if mime == "text/plain" or lower.endswith(".txt"):
+            text = _extract_plain_text(data)
+        elif mime == "application/pdf" or lower.endswith(".pdf"):
+            text = _extract_pdf_text(data)
+            if len(text.strip()) < 40:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        "Could not read enough text from this PDF. "
+                        "Try a text-based PDF or upload a photo of the note."
+                    ),
+                )
+        elif mime in _NOTE_IMAGE_MIMES or lower.endswith(
+            (".jpg", ".jpeg", ".png", ".webp", ".gif")
+        ):
+            image_mime = mime if mime in _NOTE_IMAGE_MIMES else "image/jpeg"
+            text = await _extract_image_text(data, image_mime)
+        else:
+            raise HTTPException(
+                status_code=415,
+                detail="Unsupported file type. Use .txt, .pdf, or an image (JPEG, PNG, WebP, GIF).",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f" [API] extract-note-text failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to extract text from file")
+
+    text = (text or "").strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="No text could be extracted from this file.")
+
+    return {"text": text}
+
 
 @app.post("/scrub", response_model=ScrubbedTranscriptResponse)
 async def scrub_pii(request: TranscriptRequest):

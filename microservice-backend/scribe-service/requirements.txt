@@ -7,3 +7,4 @@ spacy
 redis
 openai>=1.109.0
 python-multipart
+pypdf>=4.0.0

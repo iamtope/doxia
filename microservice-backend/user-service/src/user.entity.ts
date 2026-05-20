@@ -17,8 +17,11 @@ export class User {
     @Column({ nullable: true })
     clinicName: string;
 
-    @Column({ select: false })
-    password: string;
+    @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+    googleId: string | null;
+
+    @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+    password: string | null;
 
     @CreateDateColumn()
     createdAt: Date;

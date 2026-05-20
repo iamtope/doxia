@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { SparklesIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import ThemeToggle from "../components/ThemeToggle";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import toast from "react-hot-toast";
 
 export default function Signup() {
@@ -114,6 +115,19 @@ export default function Signup() {
             <p className="text-slate-500 dark:text-slate-400 mt-2">
               Start your journey towards effortless documentation.
             </p>
+          </div>
+
+          <GoogleSignInButton label="Sign up with Google" />
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-50 dark:bg-slate-950 px-3 text-slate-400 font-bold tracking-wider">
+                or with email
+              </span>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

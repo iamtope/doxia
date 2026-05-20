@@ -24,6 +24,10 @@ import {
   getUserStoredTemplates,
   type StoredUserTemplate,
 } from "../../lib/clinical-templates";
+import {
+  extractTextFromNoteFile,
+  NOTE_IMPORT_ACCEPT,
+} from "../../lib/note-import";
 
 type Tab = "all" | "mine" | "community";
 
@@ -45,6 +49,8 @@ export default function TemplatesLibraryPage() {
   const [formInstructions, setFormInstructions] = useState("");
 
   const [uploadText, setUploadText] = useState("");
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadFileName, setUploadFileName] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     const builtin = BUILTIN_TEMPLATES.map((t) => ({
@@ -127,6 +133,23 @@ export default function TemplatesLibraryPage() {
     toast.success(editing ? "Template updated" : "Template created");
     setCreateOpen(false);
     setEditing(null);
+  };
+
+  const onNoteFileSelected = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadLoading(true);
+    setUploadFileName(file.name);
+    try {
+      const text = await extractTextFromNoteFile(file);
+      setUploadText(text);
+      toast.success("Note text loaded — review and continue.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not read file";
+      toast.error(msg);
+      setUploadFileName(null);
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   const onUploadAnalyze = () => {
@@ -420,36 +443,52 @@ export default function TemplatesLibraryPage() {
               Import structure from note
             </h2>
             <p className="text-sm text-slate-500">
-              Paste sample text below. Lines that look like headings (often ALL
-              CAPS) seed section names; tweak them in the next step.
+              Upload a note (.txt, .pdf, or image) or paste text below. Lines
+              that look like headings (often ALL CAPS) seed section names; tweak
+              them in the next step.
             </p>
+            {uploadFileName && (
+              <p className="text-xs text-slate-500">
+                Loaded from:{" "}
+                <span className="font-medium text-slate-700 dark:text-slate-300">
+                  {uploadFileName}
+                </span>
+              </p>
+            )}
             <textarea
               value={uploadText}
               onChange={(e) => setUploadText(e.target.value)}
               rows={12}
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-sm"
+              disabled={uploadLoading}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-sm disabled:opacity-60"
               placeholder="Paste a note or outline..."
             />
-            <div className="flex gap-3 justify-between items-center pt-2">
-              <label className="text-sm text-trust-blue font-semibold cursor-pointer">
-                Or choose .txt file
+            <div className="flex gap-3 justify-between items-center pt-2 flex-wrap">
+              <label
+                className={`text-sm text-trust-blue font-semibold ${
+                  uploadLoading ? "opacity-50 pointer-events-none" : "cursor-pointer"
+                }`}
+              >
+                {uploadLoading ? "Reading file…" : "Choose file (.txt, .pdf, image)"}
                 <input
                   type="file"
-                  accept=".txt,text/plain"
+                  accept={NOTE_IMPORT_ACCEPT}
                   className="hidden"
+                  disabled={uploadLoading}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (!f) return;
-                    const r = new FileReader();
-                    r.onload = () => setUploadText(String(r.result || ""));
-                    r.readAsText(f);
+                    void onNoteFileSelected(f);
+                    e.target.value = "";
                   }}
                 />
               </label>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setUploadOpen(false)}
+                  onClick={() => {
+                    setUploadOpen(false);
+                    setUploadFileName(null);
+                  }}
                   className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600"
                 >
                   Cancel
@@ -457,7 +496,7 @@ export default function TemplatesLibraryPage() {
                 <button
                   type="button"
                   onClick={onUploadAnalyze}
-                  disabled={!uploadText.trim()}
+                  disabled={uploadLoading || !uploadText.trim()}
                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-trust-blue text-white disabled:opacity-40"
                 >
                   Continue

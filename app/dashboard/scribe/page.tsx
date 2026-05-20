@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,6 +28,11 @@ import {
   BUILTIN_TEMPLATES,
 } from "../../lib/clinical-templates";
 import { getTrialDaysRemaining, SCRIBE_LANGUAGES } from "../../lib/scribe-session";
+import {
+  clearScribeDraft,
+  loadScribeDraft,
+  saveScribeDraft,
+} from "../../lib/scribe-autosave";
 
 const SESSION_CAP_SECONDS = 30 * 60; // 30 minutes
 const TOTAL_USAGE_CAP_SECONDS = 2 * 60 * 60; // 2 hours
@@ -113,7 +118,11 @@ export default function LiveScribe() {
   >([]);
   const [diarizationEnabled, setDiarizationEnabled] = useState(false);
   const [editNote, setEditNote] = useState<Record<string, string>>({});
-  const [isSaving, setIsSaving] = useState(false);
+  const [savedNoteId, setSavedNoteId] = useState<number | null>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [draftRestored, setDraftRestored] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -121,6 +130,8 @@ export default function LiveScribe() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null); // For Browser Speech Recognition
   const sessionIdRef = useRef<string | null>(null);
+  const saveInFlightRef = useRef(false);
+  const savedNoteIdRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -128,6 +139,104 @@ export default function LiveScribe() {
     new Array(20).fill(0)
   );
   const [interimTranscript, setInterimTranscript] = useState("");
+
+  const persistSessionNote = useCallback(
+    async (opts?: {
+      silent?: boolean;
+      structuredNote?: Record<string, unknown>;
+      rawTranscript?: string;
+    }) => {
+      if (!user || !token) return false;
+      const structured =
+        opts?.structuredNote ??
+        (isEditing && Object.keys(editNote).length > 0 ? editNote : generatedNote);
+      if (!structured || Object.keys(structured).length === 0) return false;
+      if (saveInFlightRef.current) return false;
+
+      const GATEWAY_BASE =
+        process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3003";
+      const title =
+        sessionTitle.trim() && sessionTitle !== "Add patient details"
+          ? sessionTitle.trim()
+          : null;
+      const note = {
+        rawTranscript: opts?.rawTranscript ?? rawTranscript,
+        structuredNote: structured,
+        template: title
+          ? `${title} · ${activeDef.name} (${activeDef.id})`
+          : `${activeDef.name} (${activeDef.id})`,
+        billingCodes,
+        patientSummary,
+        speakerUtterances:
+          speakerUtterances.length > 0 ? speakerUtterances : undefined,
+        diarizationEnabled,
+      };
+
+      saveInFlightRef.current = true;
+      setAutosaveStatus("saving");
+      const noteId = savedNoteIdRef.current ?? savedNoteId;
+      try {
+        if (noteId) {
+          const response = await fetch(
+            `${GATEWAY_BASE}/auth/notes/${noteId}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ note }),
+            },
+          );
+          if (!response.ok) throw new Error("Failed to update note");
+        } else {
+          const response = await fetch(`${GATEWAY_BASE}/auth/notes`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ userId: user.id, note }),
+          });
+          if (!response.ok) throw new Error("Failed to save note");
+          const data = await response.json();
+          if (data?.id) {
+            savedNoteIdRef.current = data.id;
+            setSavedNoteId(data.id);
+          }
+        }
+        setAutosaveStatus("saved");
+        if (!opts?.silent) {
+          toast.success("Session saved to patient history");
+        }
+        return true;
+      } catch (err) {
+        console.error("Autosave error:", err);
+        setAutosaveStatus("error");
+        if (!opts?.silent) {
+          toast.error("Failed to save session to history.");
+        }
+        return false;
+      } finally {
+        saveInFlightRef.current = false;
+      }
+    },
+    [
+      user,
+      token,
+      generatedNote,
+      savedNoteId,
+      isEditing,
+      editNote,
+      sessionTitle,
+      activeDef,
+      rawTranscript,
+      billingCodes,
+      patientSummary,
+      speakerUtterances,
+      diarizationEnabled,
+    ],
+  );
 
   const getDevices = async () => {
     try {
@@ -171,6 +280,29 @@ export default function LiveScribe() {
 
     navigator.mediaDevices.addEventListener("devicechange", getDevices);
 
+    const draft = loadScribeDraft();
+    if (draft && !draftRestored) {
+      setSessionTitle(draft.sessionTitle);
+      setEncounterContext(draft.encounterContext);
+      setTranscriptChunks(draft.transcriptChunks);
+      setSelectedTemplateId(draft.selectedTemplateId);
+      setSpeechLang(draft.speechLang);
+      setCurrentSessionId(draft.currentSessionId);
+      setSessionTime(draft.sessionTime);
+      setGeneratedNote(draft.generatedNote);
+      setEditNote(draft.editNote);
+      setBillingCodes(draft.billingCodes as any[]);
+      setPatientSummary(draft.patientSummary);
+      setRawTranscript(draft.rawTranscript);
+      setSpeakerUtterances(draft.speakerUtterances);
+      setDiarizationEnabled(draft.diarizationEnabled);
+      savedNoteIdRef.current = draft.savedNoteId;
+      setSavedNoteId(draft.savedNoteId);
+      if (draft.generatedNote) setAutosaveStatus("saved");
+      setDraftRestored(true);
+      toast.success("Restored your last session");
+    }
+
     return () => {
       navigator.mediaDevices.removeEventListener("devicechange", getDevices);
       if (timerRef.current) clearInterval(timerRef.current);
@@ -180,7 +312,79 @@ export default function LiveScribe() {
         cancelAnimationFrame(animationFrameRef.current);
       if (audioContextRef.current) audioContextRef.current.close();
     };
-  }, []);
+  }, [draftRestored]);
+
+  useEffect(() => {
+    const hasDraft =
+      isRecording ||
+      transcriptChunks.length > 0 ||
+      generatedNote !== null ||
+      encounterContext.trim().length > 0 ||
+      (sessionTitle.trim() && sessionTitle !== "Add patient details");
+
+    if (!hasDraft) return;
+
+    const t = setTimeout(() => {
+      saveScribeDraft({
+        sessionTitle,
+        encounterContext,
+        transcriptChunks,
+        selectedTemplateId,
+        speechLang,
+        currentSessionId,
+        sessionTime,
+        generatedNote,
+        editNote,
+        billingCodes,
+        patientSummary,
+        rawTranscript,
+        speakerUtterances,
+        diarizationEnabled,
+        savedNoteId,
+        updatedAt: new Date().toISOString(),
+      });
+    }, 800);
+
+    return () => clearTimeout(t);
+  }, [
+    isRecording,
+    sessionTitle,
+    encounterContext,
+    transcriptChunks,
+    selectedTemplateId,
+    speechLang,
+    currentSessionId,
+    sessionTime,
+    generatedNote,
+    editNote,
+    billingCodes,
+    patientSummary,
+    rawTranscript,
+    speakerUtterances,
+    diarizationEnabled,
+    savedNoteId,
+  ]);
+
+  useEffect(() => {
+    if (!generatedNote || !user || !token) return;
+
+    const t = setTimeout(() => {
+      void persistSessionNote({ silent: true });
+    }, 2000);
+
+    return () => clearTimeout(t);
+  }, [
+    generatedNote,
+    editNote,
+    isEditing,
+    rawTranscript,
+    billingCodes,
+    patientSummary,
+    sessionTitle,
+    user,
+    token,
+    persistSessionNote,
+  ]);
 
   useEffect(() => {
     if (isRecording && !isPaused) {
@@ -413,6 +617,9 @@ export default function LiveScribe() {
     setDiarizationEnabled(false);
     setTranscriptChunks([]);
     setSessionTime(0);
+    savedNoteIdRef.current = null;
+    setSavedNoteId(null);
+    setAutosaveStatus("idle");
   };
 
   const handlePauseResume = () => {
@@ -533,6 +740,11 @@ export default function LiveScribe() {
       setDiarizationEnabled(Boolean(data.diarization_enabled));
 
       toast.success("Professional clinical report generated!");
+      void persistSessionNote({
+        silent: true,
+        structuredNote: structured,
+        rawTranscript: data.raw_transcript || "",
+      });
     } catch (err) {
       console.error("Error generating report:", err);
       const raw =
@@ -548,11 +760,11 @@ export default function LiveScribe() {
     }
   };
 
-  const toggleEdit = () => {
+  const toggleEdit = async () => {
     if (isEditing) {
-      // Save changes
       setGeneratedNote(editNote);
-      toast.success("Note updated locally");
+      toast.success("Note updated");
+      await persistSessionNote({ silent: true });
     } else {
       // Entering edit mode: Sync editNote with generatedNote using case-insensitive keys
       // to ensure textareas are populated even if AI used different casing
@@ -574,46 +786,6 @@ export default function LiveScribe() {
     setIsEditing(!isEditing);
   };
 
-  const handleFinalize = async () => {
-    if (!user || !generatedNote) return;
-
-    setIsSaving(true);
-    try {
-      const GATEWAY_BASE =
-        process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3003";
-      const response = await fetch(`${GATEWAY_BASE}/auth/notes`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          note: {
-            rawTranscript: rawTranscript,
-            structuredNote: generatedNote,
-            template: `${activeDef.name} (${activeDef.id})`,
-            billingCodes: billingCodes,
-            patientSummary: patientSummary,
-            speakerUtterances:
-              speakerUtterances.length > 0 ? speakerUtterances : undefined,
-            diarizationEnabled,
-          },
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to save note");
-
-      toast.success("Note finalized and saved to patient history!");
-      // Optionally redirect or clear
-    } catch (err) {
-      console.error("Save error:", err);
-      toast.error("Failed to save note to history.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
   const [discardAction, setDiscardAction] = useState<() => void>(() => {});
 
@@ -628,6 +800,10 @@ export default function LiveScribe() {
       setTranscriptChunks([]);
       setSessionTime(0);
       setCurrentSessionId(null);
+      savedNoteIdRef.current = null;
+      setSavedNoteId(null);
+      setAutosaveStatus("idle");
+      clearScribeDraft();
       setIsDiscardModalOpen(false);
       toast.success("Session discarded");
     });
@@ -665,6 +841,10 @@ export default function LiveScribe() {
       setTranscriptChunks([]);
       setCurrentSessionId(null);
       sessionIdRef.current = null;
+      savedNoteIdRef.current = null;
+      setSavedNoteId(null);
+      setAutosaveStatus("idle");
+      clearScribeDraft();
       setIsDiscardModalOpen(false);
       toast.success("Recording discarded");
     });
@@ -687,6 +867,10 @@ export default function LiveScribe() {
     setCurrentSessionId(null);
     setSessionTitle("Add patient details");
     setEncounterContext("");
+    savedNoteIdRef.current = null;
+    setSavedNoteId(null);
+    setAutosaveStatus("idle");
+    clearScribeDraft();
     toast.success("New session");
   };
 
@@ -1208,13 +1392,36 @@ export default function LiveScribe() {
                   >
                     {isEditing ? "Save Note" : "Edit Note"}
                   </button>
-                  <button
-                    onClick={handleFinalize}
-                    disabled={isSaving}
-                    className="bg-trust-blue text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-trust-blue/20 disabled:opacity-50"
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+                      autosaveStatus === "saved"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : autosaveStatus === "saving"
+                          ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          : autosaveStatus === "error"
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                            : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                    }`}
+                    title="Sessions autosave to patient history"
                   >
-                    {isSaving ? "Saving..." : "Finalize & Save"}
-                  </button>
+                    {autosaveStatus === "saving" && "Saving…"}
+                    {autosaveStatus === "saved" && (
+                      <>
+                        <CheckCircleIcon className="w-4 h-4" />
+                        Saved
+                      </>
+                    )}
+                    {autosaveStatus === "error" && (
+                      <button
+                        type="button"
+                        onClick={() => void persistSessionNote()}
+                        className="underline"
+                      >
+                        Retry save
+                      </button>
+                    )}
+                    {autosaveStatus === "idle" && "Autosave on"}
+                  </span>
                 </div>
               </div>
 

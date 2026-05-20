@@ -36,6 +36,10 @@ services:
       TYPEORM_SYNC: "true"
       RABBITMQ_URL: amqp://rabbitmq:5672
       CORS_ORIGINS: "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3003/auth/google/callback}
+      AUTH_FRONTEND_CALLBACK_URL: ${AUTH_FRONTEND_CALLBACK_URL:-http://localhost:3000/auth/callback}
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "3002:3002"

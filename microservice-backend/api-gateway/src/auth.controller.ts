@@ -1,6 +1,19 @@
-import { Controller, Post, Body, Get, HttpException, HttpStatus, Param, Req, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Patch,
+  HttpException,
+  HttpStatus,
+  Param,
+  Req,
+  Res,
+  Headers,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import type { Request, Response } from 'express';
 
 @Controller('auth')
 export class UserController {
@@ -49,11 +62,82 @@ export class UserController {
     }
   }
 
+  @Get('google')
+  async googleAuthorize(@Res() res: Response) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.USER_SERVICE_URL}/google/authorize`, {
+          maxRedirects: 0,
+          validateStatus: () => true,
+        }),
+      );
+      const location =
+        response.headers?.location ||
+        response.headers?.Location;
+      if (response.status >= 300 && response.status < 400 && location) {
+        return res.redirect(response.status, String(location));
+      }
+      throw new HttpException(
+        response.data || 'Google authorize failed',
+        response.status || HttpStatus.BAD_GATEWAY,
+      );
+    } catch (error: any) {
+      const loc =
+        error.response?.headers?.location ||
+        error.response?.headers?.Location;
+      if (loc) {
+        return res.redirect(error.response.status, String(loc));
+      }
+      this.handleError(error);
+    }
+  }
+
+  @Get('google/callback')
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const qs = req.url.includes('?') ? req.url.split('?')[1] : '';
+    const target = `${this.USER_SERVICE_URL}/google/callback${qs ? `?${qs}` : ''}`;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(target, {
+          maxRedirects: 0,
+          validateStatus: () => true,
+        }),
+      );
+      if (response.status >= 300 && response.status < 400 && response.headers.location) {
+        return res.redirect(response.status, response.headers.location);
+      }
+      throw new HttpException('Google callback failed', HttpStatus.BAD_GATEWAY);
+    } catch (error: any) {
+      if (error.response?.status >= 300 && error.response?.status < 400 && error.response?.headers?.location) {
+        return res.redirect(error.response.status, error.response.headers.location);
+      }
+      this.handleError(error);
+    }
+  }
+
   @Post('notes')
   async saveNote(@Body() noteData: any, @Headers('authorization') auth?: string) {
     try {
       const response = await firstValueFrom(
         this.httpService.post(`${this.USER_SERVICE_URL}/notes`, noteData, {
+          headers: this.authHeaders(auth),
+        })
+      );
+      return response.data;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  @Patch('notes/:id')
+  async updateNote(
+    @Param('id') id: string,
+    @Body() noteData: any,
+    @Headers('authorization') auth?: string,
+  ) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.patch(`${this.USER_SERVICE_URL}/notes/${id}`, noteData, {
           headers: this.authHeaders(auth),
         })
       );

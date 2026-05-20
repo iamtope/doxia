@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import ThemeToggle from "../components/ThemeToggle";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 
@@ -15,6 +16,21 @@ export default function Login() {
     password: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const oauthErrorShown = useRef(false);
+
+  useEffect(() => {
+    if (oauthErrorShown.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("error");
+    if (!err) return;
+    oauthErrorShown.current = true;
+    if (err === "google") {
+      toast.error("Google sign-in failed. Please try again.");
+    } else if (err === "incomplete" || err === "invalid") {
+      toast.error("Could not complete Google sign-in.");
+    }
+    window.history.replaceState({}, "", "/login");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +92,19 @@ export default function Login() {
         </div>
 
         <div className="glass rounded-[32px] p-8 md:p-10 shadow-2xl border-white/40 dark:border-slate-800/60">
+          <GoogleSignInButton label="Continue with Google" />
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white/80 dark:bg-slate-900/80 px-3 text-slate-400 font-bold tracking-wider">
+                or with email
+              </span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div>
