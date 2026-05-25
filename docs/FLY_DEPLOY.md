@@ -97,6 +97,25 @@ NEXT_PUBLIC_SCRIBE_WS_URL=wss://doxia-scribe.fly.dev
 
 Set `CORS_ORIGINS` on gateway, user, scribe, and ehr Fly secrets to include your Vercel URL.
 
+### Scribe (`doxia-scribe`) secrets
+
+Required:
+
+```bash
+fly secrets set OPENAI_API_KEY="sk-..." -a doxia-scribe
+fly secrets set CORS_ORIGINS="https://doxia-red.vercel.app,http://localhost:3000" -a doxia-scribe
+```
+
+Do **not** set loopback `REDIS_URL` or `RABBITMQ_URL` on Fly unless you run Redis/Rabbit there. Remove bad values:
+
+```bash
+fly secrets unset REDIS_URL RABBITMQ_URL RABBITMQ_ENABLED -a doxia-scribe
+```
+
+Redeploy after changing secrets. If logs show `401 Unauthorized` from OpenAI, the Fly `OPENAI_API_KEY` is wrong or revoked — copy a fresh key from [platform.openai.com](https://platform.openai.com/api-keys).
+
+Keep at least one machine warm for demos (`scribe-service/fly.toml` sets `min_machines_running = 1`).
+
 ## Verify EHR
 
 ```bash

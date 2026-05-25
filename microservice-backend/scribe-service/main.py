@@ -325,19 +325,26 @@ async def start_rabbitmq_consumer():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global redis_client
-    # Startup: Initialize Redis
-    try:
-        redis_client = redis.from_url(settings.redis_url, decode_responses=True)
-        await redis_client.ping()
-        logger.info(f" [Redis] Connected to Redis at {settings.redis_url}")
-    except Exception as e:
-        logger.error(f" [Redis] Failed to connect to Redis: {e}")
+    if settings.use_redis:
+        try:
+            redis_client = redis.from_url(settings.redis_url, decode_responses=True)
+            await redis_client.ping()
+            logger.info(f" [Redis] Connected to Redis at {settings.redis_url}")
+        except Exception as e:
+            logger.error(f" [Redis] Failed to connect to Redis: {e}")
+            redis_client = None
+    else:
+        logger.info(
+            " [Redis] Skipped (no REDIS_URL or loopback URL; live WS scrub still works in-memory)"
+        )
 
     rmq_conn = None
-    if settings.rabbitmq_enabled:
+    if settings.use_rabbitmq:
         rmq_conn = await start_rabbitmq_consumer()
     else:
-        logger.info(" [RMQ] Consumer disabled (set RABBITMQ_ENABLED=true with a broker URL to enable)")
+        logger.info(
+            " [RMQ] Consumer disabled (set RABBITMQ_ENABLED=true and a non-localhost RABBITMQ_URL to enable)"
+        )
     yield
     # Shutdown: Close connections
     if rmq_conn:
@@ -731,7 +738,13 @@ async def process_audio(
 
     except Exception as e:
         logger.error(f" [API] Error processing audio: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        err = str(e)
+        if "invalid_api_key" in err or "Incorrect API key" in err:
+            raise HTTPException(
+                status_code=503,
+                detail="Transcription service misconfigured (invalid OpenAI API key on the server).",
+            )
+        raise HTTPException(status_code=500, detail="Failed to process audio. Please try again.")
     finally:
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
