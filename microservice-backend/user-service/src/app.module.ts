@@ -20,7 +20,8 @@ import { RabbitMQModule } from './rabbitmq.module';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'doxxia_users',
       entities: [User, Note],
-      synchronize: process.env.TYPEORM_SYNC === 'true',
+      // Auto-align schema on startup (adds googleId, etc.). Set TYPEORM_SYNC=false when using migrations.
+      synchronize: process.env.TYPEORM_SYNC !== 'false',
     }),
     TypeOrmModule.forFeature([User, Note]),
     JwtModule.register({

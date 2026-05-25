@@ -32,7 +32,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       RABBITMQ_URL: amqp://rabbitmq:5672
       CORS_ORIGINS: ${CORS_ORIGINS}
-      TYPEORM_SYNC: "false"
+      TYPEORM_SYNC: "true"
     restart: unless-stopped
 
   api-gateway:
@@ -60,7 +60,7 @@ services:
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME:-doxxia_users}
-      TYPEORM_SYNC: "false"
+      TYPEORM_SYNC: "true"
       JWT_SECRET: ${JWT_SECRET}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
       EHR_FRONTEND_SUCCESS_URL: ${EHR_FRONTEND_SUCCESS_URL}

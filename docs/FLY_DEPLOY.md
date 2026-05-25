@@ -59,7 +59,7 @@ Set via `fly secrets set KEY=value -a <app>`. Use the same Postgres as `doxia-us
 - `JWT_SECRET`
 - `RABBITMQ_URL` (if used)
 - `CORS_ORIGINS`
-- `TYPEORM_SYNC` — `false` in production
+- `TYPEORM_SYNC` — omit or `true` (default: auto-sync schema on boot). Set `false` only when you add migrations.
 
 ### `doxia-scribe`
 
@@ -74,7 +74,7 @@ Set via `fly secrets set KEY=value -a <app>`. Use the same Postgres as `doxia-us
 - `CORS_ORIGINS`
 - `EHR_FRONTEND_SUCCESS_URL`, `EHR_FRONTEND_ERROR_URL` — e.g. `https://your-app.vercel.app/dashboard/integrations`
 - Epic / Cerner: `EPIC_*`, `CERNER_*` (see `ehr-service/README.md`)
-- `TYPEORM_SYNC` — `false` in production
+- `TYPEORM_SYNC` — omit or `true` (default: auto-sync schema on boot). Set `false` only when you add migrations.
 
 ## Manual deploy
 

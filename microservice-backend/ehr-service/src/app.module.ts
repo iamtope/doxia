@@ -23,7 +23,7 @@ import { OAuthState } from './entities/oauth-state.entity';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'doxxia_users',
       entities: [EhrConnection, OAuthState],
-      synchronize: process.env.TYPEORM_SYNC === 'true',
+      synchronize: process.env.TYPEORM_SYNC !== 'false',
     }),
     TypeOrmModule.forFeature([EhrConnection, OAuthState]),
     JwtModule.register({
