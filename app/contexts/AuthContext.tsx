@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("user", JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
-    router.replace("/dashboard");
+    router.replace("/dashboard/scribe");
   }, [router]);
 
   const logout = useCallback(() => {

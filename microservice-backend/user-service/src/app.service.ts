@@ -103,18 +103,16 @@ export class AppService {
       clinicName,
     });
 
-    await this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
 
     // Emit event for other services (e.g., Scribe Service)
     this.client.emit('user_created', {
-      userId: user.id,
-      email: user.email,
-      fullName: user.fullName,
+      userId: saved.id,
+      email: saved.email,
+      fullName: saved.fullName,
     });
 
-    // Remove password from response
-    const { password: _, ...result } = user;
-    return result;
+    return this.issueAuthResponse(saved);
   }
 
   async login(data: any) {

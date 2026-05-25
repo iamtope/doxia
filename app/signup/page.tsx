@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { SparklesIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import ThemeToggle from "../components/ThemeToggle";
 import GoogleSignInButton from "../components/GoogleSignInButton";
+import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 
 export default function Signup() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -18,13 +18,19 @@ export default function Signup() {
     clinicName: "",
     password: "",
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      toast.error("Please accept the Terms and Privacy Policy.");
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const GATEWAY_BASE = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3003";
+      const GATEWAY_BASE =
+        process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3003";
       const response = await fetch(`${GATEWAY_BASE}/auth/signup`, {
         method: "POST",
         headers: {
@@ -35,12 +41,15 @@ export default function Signup() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Signup success:", data);
-        toast.success("Account created! Please log in.");
-        router.push("/login");
+        if (data.access_token && data.user) {
+          toast.success("Welcome to Doxia! Opening Live Scribe…");
+          login(data.access_token, data.user);
+        } else {
+          toast.success("Account created! Please log in.");
+          window.location.href = "/login";
+        }
       } else {
         const error = await response.json();
-        console.error("Signup failed:", error);
         toast.error(error.message || "Signup failed. Email might be taken.");
       }
     } catch (err) {
@@ -53,7 +62,6 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row">
-      {/* Left Side - Branding & Info */}
       <div className="md:w-[40%] bg-gradient-to-br from-[#0052CC] to-indigo-700 p-12 text-white flex flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-10 pointer-events-none" />
 
@@ -67,37 +75,47 @@ export default function Signup() {
               animate={{ opacity: 1, x: 0 }}
               className="pill bg-white/10 border-white/20 text-white w-fit"
             >
-              Join the future of medicine
+              Open beta — free to use
             </motion.div>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight">
               Ready to automate your clinical workflow?
             </h1>
             <p className="text-xl text-white/80 leading-relaxed max-w-md">
-              Join the beta of the most intuitive AI medical scribe ever
-              built. Free while in beta.
+              After signup you&apos;ll land in Live Scribe to record your first
+              encounter and generate a structured note.
             </p>
           </div>
         </div>
 
-        <div className="relative z-10 space-y-8 mt-12 md:mt-0">
+        <div className="relative z-10 space-y-6 mt-12 md:mt-0">
+          <div className="rounded-2xl bg-white/10 border border-white/20 p-5 text-sm space-y-2">
+            <p className="font-bold">Beta includes</p>
+            <ul className="text-white/80 space-y-1 list-disc list-inside">
+              <li>SOAP, DAP, BIRP &amp; custom templates</li>
+              <li>Diarization, billing codes, copy to EHR</li>
+              <li>30 min per session · 2 hrs total per account</li>
+            </ul>
+            <Link href="/pricing" className="text-white/90 underline text-xs">
+              Full beta details
+            </Link>
+          </div>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
               <SparklesIcon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="font-bold">Apple-Level Polish</p>
+              <p className="font-bold">Privacy-first</p>
               <p className="text-sm text-white/60 text-pretty">
-                Designed to feel like native medical software.
+                Do not use real patient PHI until HIPAA is announced.
               </p>
             </div>
           </div>
           <div className="text-xs text-white/40">
-            &copy; {new Date().getFullYear()} Doxia. Privacy-first design.
+            &copy; {new Date().getFullYear()} Doxia.
           </div>
         </div>
       </div>
 
-      {/* Right Side - Form */}
       <div className="flex-1 p-8 md:p-24 flex items-center justify-center relative">
         <div className="absolute top-8 right-8">
           <ThemeToggle />
@@ -113,7 +131,7 @@ export default function Signup() {
               Create your account
             </h2>
             <p className="text-slate-500 dark:text-slate-400 mt-2">
-              Start your journey towards effortless documentation.
+              You&apos;ll go straight to Live Scribe — no extra login step.
             </p>
           </div>
 
@@ -214,6 +232,26 @@ export default function Signup() {
                 />
               </div>
             </div>
+
+            <label className="flex items-start gap-3 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 rounded border-slate-300 text-trust-blue focus:ring-trust-blue"
+              />
+              <span>
+                I agree to the{" "}
+                <Link href="/terms" className="text-trust-blue font-semibold hover:underline">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="text-trust-blue font-semibold hover:underline">
+                  Privacy Policy
+                </Link>
+                . I understand beta is not for real patient PHI.
+              </span>
+            </label>
 
             <button
               type="submit"

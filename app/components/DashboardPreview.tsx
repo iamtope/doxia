@@ -1,187 +1,110 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { 
-  MicrophoneIcon, 
-  DocumentTextIcon, 
-  Squares2X2Icon, 
-  Cog6ToothIcon,
-  CheckCircleIcon,
+import {
+  MicrophoneIcon,
+  DocumentTextIcon,
+  ClipboardIcon,
+  QueueListIcon,
+  UsersIcon,
   ArrowPathIcon,
-  ClipboardDocumentCheckIcon,
-  UsersIcon
 } from "@heroicons/react/24/outline";
 
+/** Static product frame — no motion, glass, or floating badges */
 export default function DashboardPreview() {
   return (
-    <div className="relative w-full max-w-5xl mx-auto px-4 py-12">
-      {/* Background Glows */}
-      <div className="absolute -top-20 -left-20 w-72 h-72 bg-trust-blue/10 blur-[120px] rounded-full" />
-      <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-indigo-500/10 blur-[120px] rounded-full" />
-
-      {/* Main Container - Mock Browser/App Frame */}
-      <motion.div 
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="relative glass rounded-3xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] border border-white/40 dark:border-slate-800/60 flex h-[600px]"
-      >
-        {/* Sidebar */}
-        <div className="w-64 border-r border-slate-200/40 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/50 p-6 hidden md:flex flex-col gap-8">
-          <div className="flex items-center gap-2 px-2">
-            <div className="w-8 h-8 rounded-lg bg-trust-blue flex items-center justify-center">
-              <span className="text-white font-bold text-lg italic">d</span>
+    <div className="border border-stone-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="flex h-[480px]">
+        <aside className="hidden sm:flex w-52 flex-col border-r border-stone-200 dark:border-slate-800 bg-stone-50 dark:bg-slate-950 p-4">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-7 h-7 bg-[#0052CC] flex items-center justify-center text-white text-sm font-bold">
+              d
             </div>
-            <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">doxia</span>
+            <span className="font-semibold text-sm">doxia</span>
           </div>
-
-          <nav className="space-y-1">
+          <nav className="space-y-0.5 text-sm">
             {[
-              { icon: Squares2X2Icon, label: "Dashboard", active: false },
               { icon: MicrophoneIcon, label: "Live Scribe", active: true },
-              { icon: DocumentTextIcon, label: "Patient Notes", active: false },
-              { icon: UsersIcon, label: "Team Collaboration", active: false },
-              { icon: ArrowPathIcon, label: "EHR Sync", active: false },
-              { icon: Cog6ToothIcon, label: "Settings", active: false },
+              { icon: DocumentTextIcon, label: "Patient Notes" },
+              { icon: QueueListIcon, label: "Templates" },
+              { icon: UsersIcon, label: "Team Sync", soon: true },
+              { icon: ArrowPathIcon, label: "EHR Integrations" },
             ].map((item) => (
               <div
                 key={item.label}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  item.active 
-                    ? "bg-white dark:bg-slate-800 text-trust-blue shadow-sm border border-slate-200/50 dark:border-slate-700/50" 
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/30"
+                className={`flex items-center justify-between gap-2 px-2 py-1.5 ${
+                  item.active
+                    ? "bg-white dark:bg-slate-900 border-l-2 border-[#0052CC] text-[#0052CC]"
+                    : "text-slate-500"
                 }`}
               >
-                <item.icon className="w-5 h-5" />
-                {item.label}
+                <span className="flex items-center gap-2">
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </span>
+                {item.soon && (
+                  <span className="text-[9px] uppercase text-slate-400">Soon</span>
+                )}
               </div>
             ))}
           </nav>
+        </aside>
 
-          <div className="mt-auto p-4 rounded-2xl bg-trust-blue/5 border border-trust-blue/10">
-            <p className="text-[10px] uppercase tracking-wider font-bold text-trust-blue mb-1">Status</p>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Privacy Protected</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col bg-white/30 dark:bg-slate-900/30">
-          {/* Header */}
-          <header className="h-16 border-b border-slate-200/40 dark:border-slate-800/40 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h2 className="font-semibold text-slate-800 dark:text-slate-100">Patient: John Doe</h2>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase">DOB: 05/12/1984</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="pill text-xs font-bold py-1.5 h-auto">Save Draft</button>
-              <button className="px-4 py-1.5 rounded-full bg-trust-blue text-white text-xs font-bold shadow-lg shadow-trust-blue/20">Finalize Note</button>
-            </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-12 border-b border-stone-200 dark:border-slate-800 px-4 flex items-center justify-between text-sm">
+            <span className="font-medium text-slate-800 dark:text-slate-200">
+              Add patient details
+            </span>
+            <span className="text-xs text-rose-600 font-medium">Recording</span>
           </header>
 
-          {/* Scribe Area */}
-          <div className="flex-1 overflow-y-auto p-8 space-y-8">
-            {/* Recording Bar */}
-            <div className="card p-6 flex items-center gap-6">
-              <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center relative">
-                <div className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-20" />
-                <MicrophoneIcon className="w-6 h-6 text-rose-500" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Listening ambiently...</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase">Accents: Local</span>
-                    <span className="text-xs font-mono text-slate-400">08:42</span>
-                  </div>
-                </div>
-                <div className="h-8 flex items-center gap-1">
-                  {[...Array(32)].map((_, i) => (
-                    <motion.div
+          <div className="flex-1 p-4 space-y-4 overflow-hidden text-sm">
+            <div className="flex items-center gap-3 p-3 border border-stone-200 dark:border-slate-800">
+              <MicrophoneIcon className="w-5 h-5 text-rose-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-800 dark:text-slate-200">
+                  Listening…
+                </p>
+                <div className="mt-2 flex gap-0.5 h-4 items-end">
+                  {[3, 5, 4, 7, 5, 8, 4, 6, 5, 7, 4, 5].map((h, i) => (
+                    <div
                       key={i}
-                      animate={{ height: [4, 12, 6, 20, 8][i % 5] }}
-                      transition={{ repeat: Infinity, duration: 1, delay: i * 0.05 }}
-                      className="w-1 bg-trust-blue rounded-full opacity-60"
+                      className="w-1 bg-[#0052CC]/50"
+                      style={{ height: `${h * 2}px` }}
                     />
                   ))}
                 </div>
               </div>
+              <span className="text-xs font-mono text-slate-400">04:12</span>
             </div>
 
-            {/* Generated Note Preview */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                    <ClipboardDocumentCheckIcon className="w-4 h-4" /> Clinical Report
-                  </h3>
-                  <div className="pill px-2 py-0.5 text-[10px] bg-trust-blue/5 text-trust-blue border-trust-blue/10">
-                    Template: SOAP
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <section>
-                    <p className="text-xs font-bold text-trust-blue mb-1">SUBJECTIVE</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Patient reports lower back pain (7/10) for 3 days following heavy lifting. Describes it as a "sharp, stabbing" sensation radiating to the left hip. No numbness or tingling.
-                    </p>
-                  </section>
-                  <section>
-                    <p className="text-xs font-bold text-trust-blue mb-1">OBJECTIVE</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Lumbosacral tenderness present at L4-L5. Range of motion limited in flexion (30°). Straight leg raise negative bilaterally. Strength 5/5 in lower extremities.
-                    </p>
-                  </section>
-                </div>
+            <div className="grid grid-cols-2 gap-3 min-h-0">
+              <div className="border border-stone-200 dark:border-slate-800 p-3 space-y-2 overflow-hidden">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  SOAP · Subjective
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-4">
+                  Lower back pain 7/10 for 3 days post lifting. Sharp, left hip.
+                  No numbness.
+                </p>
               </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <ArrowPathIcon className="w-4 h-4" /> EHR Direct Sync
-                </h3>
-                <div className="card p-4 border-emerald-500/20 bg-emerald-500/5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">CONNECTED TO EPIC EHR</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-2 w-3/4 bg-slate-200 dark:bg-slate-700 rounded-full" />
-                    <div className="h-2 w-1/2 bg-slate-200 dark:bg-slate-700 rounded-full" />
-                    <div className="h-2 w-2/3 bg-slate-200 dark:bg-slate-700 rounded-full" />
-                  </div>
+              <div className="border border-stone-200 dark:border-slate-800 p-3 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Actions
+                </p>
+                <div className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 py-1.5 border-b border-stone-100 dark:border-slate-800">
+                  Copy to clipboard
+                  <ClipboardIcon className="w-4 h-4 text-[#0052CC]" />
                 </div>
-                <div className="pill w-full justify-center bg-white dark:bg-slate-800 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <span className="text-xs font-bold">Push to AthenaHealth</span>
+                <div className="flex items-center justify-between text-xs text-slate-400 py-1.5">
+                  Sync to Epic
+                  <span className="text-[9px] uppercase">Soon</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </motion.div>
-
-      {/* Floating Badges similar to reference image */}
-      <motion.div 
-        initial={{ x: 100, opacity: 0 }}
-        whileInView={{ x: 0, opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.5, duration: 0.8 }}
-        className="absolute -right-8 top-1/4 space-y-4 hidden lg:block"
-      >
-        {[
-          { text: "Fast AI Processing", color: "bg-emerald-500" },
-          { text: "Simple EHR Sync", color: "bg-trust-blue" },
-          { text: "Secure Data Layer", color: "bg-indigo-500" },
-        ].map((badge, i) => (
-          <div key={i} className="glass py-3 px-6 rounded-2xl flex items-center gap-3 shadow-2xl border border-white/60">
-            <CheckCircleIcon className={`w-6 h-6 text-white p-1 rounded-full ${badge.color}`} />
-            <span className="font-bold text-slate-800 dark:text-slate-100">{badge.text}</span>
-          </div>
-        ))}
-      </motion.div>
+      </div>
+      <p className="px-4 py-2 text-[11px] text-slate-500 dark:text-slate-500 border-t border-stone-200 dark:border-slate-800 bg-stone-50 dark:bg-slate-950">
+        Screenshot-style preview of Live Scribe in beta
+      </p>
     </div>
   );
 }
-

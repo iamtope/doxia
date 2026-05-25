@@ -9,13 +9,16 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navLinks = [{ href: "/features", label: "Features" }];
+  const navLinks = [
+    { href: "/features", label: "Features" },
+    { href: "/pricing", label: "Beta" },
+  ];
 
   return (
     <>
-      <nav className="sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/40 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl px-4 sm:px-6 h-16 shadow-lg">
+      <nav className="sticky top-0 z-50 border-b border-stone-200 dark:border-slate-800 bg-[#fafaf9]/95 dark:bg-slate-950/95 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
             <Link
               href="/"
               className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight"
@@ -30,10 +33,10 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3 py-2 rounded-full text-sm font-semibold transition-all ${
+                    className={`px-3 py-2 text-sm font-medium transition-colors ${
                       active
-                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-lg"
-                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-slate-100/80 dark:hover:bg-slate-800/80"
+                        ? "text-[#0052CC] border-b-2 border-[#0052CC]"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                     }`}
                   >
                     {link.label}
@@ -42,13 +45,13 @@ export default function Navbar() {
               })}
               <Link
                 href="/login"
-                className="px-3 py-2 rounded-full text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-all"
+                className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
               >
                 Log In
               </Link>
               <Link
                 href="/signup"
-                className="px-4 py-2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold hover:opacity-90 transition-colors"
+                className="px-4 py-2 bg-[#0052CC] text-white text-sm font-semibold hover:bg-[#0047b3] transition-colors"
               >
                 Try Free Beta
               </Link>
@@ -82,7 +85,7 @@ export default function Navbar() {
           </div>
 
           {isMobileMenuOpen && (
-            <div className="md:hidden mt-2 mb-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur p-4 space-y-3 shadow-lg">
+            <div className="md:hidden border-t border-stone-200 dark:border-slate-800 py-4 space-y-2">
               {navLinks.map((link) => {
                 const active = pathname === link.href;
                 return (

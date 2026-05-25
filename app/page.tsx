@@ -1,306 +1,227 @@
-'use client'
+import Link from "next/link";
+import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import DashboardPreview from "./components/DashboardPreview";
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import Link from 'next/link'
-import { MicrophoneIcon, SparklesIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
+const betaIncludes = [
+  "Live Scribe — ambient recording to SOAP, DAP, BIRP, or custom templates",
+  "Speaker diarization, ICD-10 suggestions, and patient summary",
+  "Patient Notes history and template editor",
+  "Copy to clipboard for any EHR; Epic/Cerner OAuth in Integrations",
+  "PII scrubbing; audio not stored on disk",
+  "Fair-use: 30 min per session, 2 hours total per account",
+];
 
-import DashboardPreview from './components/DashboardPreview'
+const steps = [
+  {
+    n: "01",
+    title: "Record the visit",
+    body: "Ambient capture during the encounter. No typing while the patient is in the room.",
+  },
+  {
+    n: "02",
+    title: "Review the note",
+    body: "Structured output in SOAP, DAP, BIRP, or your own template. Edit sections before signing off.",
+  },
+  {
+    n: "03",
+    title: "Paste into your EHR",
+    body: "One-click copy into Epic, Cerner, or any system. Direct push from scribe is on the roadmap.",
+  },
+];
+
+const faqs = [
+  {
+    q: "How does Doxia handle patient privacy?",
+    a: "Audio is processed in real time and not stored on disk. Transcripts go through PII scrubbing before persistence. We are working toward HIPAA compliance and BAAs.",
+  },
+  {
+    q: "Is Doxia HIPAA compliant?",
+    a: "Not yet. During beta we recommend synthetic or de-identified encounters only—not real patient PHI in production workflows.",
+  },
+  {
+    q: "Is Doxia free?",
+    a: "Yes during beta. No credit card. Usage is capped at 30 minutes per session and 2 hours total per account.",
+  },
+  {
+    q: "Does Doxia share my data?",
+    a: "No. We do not sell or share clinician or patient data for marketing or unrelated purposes.",
+  },
+];
 
 export default function Home() {
-
   return (
     <>
       <Navbar />
-      <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden pt-24 pb-12 px-4 bg-gradient-to-b from-white via-slate-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -left-10 -top-24 h-72 w-72 bg-[#0052CC]/20 blur-3xl rounded-full" />
-            <div className="absolute right-0 top-10 h-96 w-96 bg-indigo-400/10 blur-3xl rounded-full" />
-            <div className="absolute inset-0 bg-grid dark:bg-grid-dark opacity-40" />
-          </div>
-          <div className="max-w-7xl mx-auto relative text-center space-y-8">
-            <motion.div
-              className="space-y-6 max-w-4xl mx-auto"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            >
-              <div className="pill w-fit mx-auto">
-                <SparklesIcon className="h-4 w-4 text-[#0052CC]" />
-                <span className="text-slate-500">Privacy-First Design</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                <span className="text-slate-700 dark:text-slate-200 font-semibold">Early Access Beta</span>
+      <main className="bg-[#fafaf9] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        {/* Hero — editorial, left-aligned, no gradients/orbs */}
+        <section className="border-b border-stone-200 dark:border-slate-800">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-24">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+              <div className="space-y-8">
+                <p className="text-sm font-medium text-[#0052CC] tracking-wide uppercase">
+                  Open beta · Independent practice
+                </p>
+                <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.15] text-slate-900 dark:text-white">
+                  Ambient documentation for clinicians who still chart after
+                  hours.
+                </h1>
+                <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg">
+                  Doxia listens during the visit and drafts structured clinical
+                  notes you can review and paste into your EHR—without the
+                  generic AI scribe fluff.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link
+                    href="/signup"
+                    className="inline-flex items-center justify-center gap-2 bg-[#0052CC] text-white px-6 py-3 text-sm font-semibold hover:bg-[#0047b3] transition-colors"
+                  >
+                    Start free beta
+                    <ArrowRightIcon className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href="/features"
+                    className="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 border border-stone-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 transition-colors"
+                  >
+                    See what ships today
+                  </Link>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-500">
+                  No credit card.{" "}
+                  <Link href="/pricing" className="text-[#0052CC] hover:underline">
+                    Beta limits
+                  </Link>
+                </p>
               </div>
-              <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
-                Medical notes that feel like <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0052CC] to-indigo-500">Apple-level magic.</span>
-              </h1>
-              <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto">
-                Transform patient conversations into structured SOAP notes instantly. Save 2 hours of charting every day and deliver patient-first care.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <Link
-                  href="/signup"
-                  className="bg-gradient-to-r from-[#0052CC] to-indigo-500 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-[0_20px_60px_-25px_rgba(0,82,204,0.7)] hover:shadow-[0_25px_70px_-30px_rgba(0,82,204,0.8)] transition-all duration-300 hover:-translate-y-0.5"
-                >
-                  Try Free Beta
-                </Link>
-                <span className="text-slate-500 dark:text-slate-400 text-sm">
-                  Free during beta. No credit card required.
-                </span>
+              <div className="lg:pt-4">
+                <DashboardPreview />
               </div>
-            </motion.div>
-
-            {/* In-action Graphics */}
-            <DashboardPreview />
+            </div>
           </div>
         </section>
 
-        {/* Social Proof Section */}
-        <section className="py-16 px-4 bg-white dark:bg-slate-950">
-          <div className="max-w-6xl mx-auto text-center space-y-10">
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Built for Independent Practitioners</div>
-              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Privacy-First Architecture</div>
-              <div className="pill text-sm font-semibold text-slate-600 dark:text-slate-200">Zero Audio Retention</div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { label: 'Note Formats', value: 'SOAP+' },
-                { label: 'Speaker Diarization', value: 'Built-in' },
-                { label: 'Avg. Time Saved', value: '~2 hrs' },
-              ].map((item, idx) => (
-                <motion.div
-                  key={item.label}
-                  className="glass rounded-2xl p-8 text-center shadow-lg hover:-translate-y-1 transition-transform"
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.5, ease: 'easeOut', delay: idx * 0.08 }}
-                >
-                  <div className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{item.value}</div>
-                  <div className="text-slate-600 dark:text-slate-300">{item.label}</div>
-                </motion.div>
-              ))}
-            </div>
-            <motion.div
-              className="max-w-3xl mx-auto glass p-8 rounded-2xl text-left shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            >
-              <p className="text-sm uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2 font-bold">Early Access</p>
-              <p className="text-xl text-slate-900 dark:text-slate-100 font-semibold leading-relaxed">
-                Doxia is in open beta. We&apos;re building this with real clinician feedback &mdash; join early and help shape the product.
-              </p>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section className="py-16 px-4 bg-slate-50 dark:bg-slate-900">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-semibold text-center mb-12 text-slate-900 dark:text-slate-100">
-              How It Works
+        {/* Beta scope */}
+        <section className="border-b border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-6">
+              Included in beta
             </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              {[
-                {
-                  icon: <MicrophoneIcon className="h-8 w-8 text-[#0052CC]" />,
-                  title: 'Record Encounter',
-                  body: 'Start ambient listening. We capture every word with clinic-grade accuracy.',
-                },
-                {
-                  icon: <SparklesIcon className="h-8 w-8 text-[#0052CC]" />,
-                  title: 'Generate Reports',
-                  body: 'Instantly generate reports in your preferred template format (e.g., SOAP, DAP, or custom letters).',
-                },
-                {
-                  icon: <ClipboardDocumentListIcon className="h-8 w-8 text-[#0052CC]" />,
-                  title: 'Sync to EHR',
-                  body: 'Copy-paste into Epic, Cerner, or Athena. Zero friction, zero lock-in.',
-                },
-              ].map((step, idx) => (
-                <motion.div
-                  key={step.title}
-                  className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-8 flex flex-col gap-3 hover:-translate-y-1 transition-transform"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.5, ease: 'easeOut', delay: idx * 0.08 }}
+            <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
+              {betaIncludes.map((item) => (
+                <li
+                  key={item}
+                  className="text-sm text-slate-700 dark:text-slate-300 pl-4 border-l-2 border-[#0052CC]/40"
                 >
-                  <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-indigo-500/10 blur-3xl" />
-                  <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    {step.icon}
-                  </div>
-                  <div className="text-sm text-slate-500">Step {idx + 1}</div>
-                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{step.title}</h3>
-                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{step.body}</p>
-                </motion.div>
+                  {item}
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </section>
 
-        {/* Problem / Solution Section */}
-        <section className="py-16 px-4 bg-white dark:bg-slate-950">
-          <div className="max-w-6xl mx-auto text-center space-y-12">
-            <motion.div
-              className="space-y-4 max-w-3xl mx-auto"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.35 }}
-              transition={{ duration: 0.55, ease: 'easeOut' }}
-            >
-              <div className="pill w-fit mx-auto text-rose-500 bg-rose-500/5 border-rose-500/10">The Documentation Burden</div>
-              <h3 className="text-4xl md:text-5xl font-semibold text-slate-900 dark:text-slate-100">
-                Stop charting after hours.
-              </h3>
-              <p className="text-xl text-slate-600 dark:text-slate-300">
-                Most doctors spend 2 hours on paperwork for every 1 hour of patient care. Doxia flips the script, automating your clinical documentation with ambient AI that understands medical context.
-              </p>
-            </motion.div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { title: "Ambient Listening", text: "Capture natural dialogue without a keyboard in the way." },
-                { title: "Multi-Template Support", text: "Generate reports in SOAP, DAP, BIRP, or custom letter formats." },
-                { title: "Team Collaboration", text: "Share notes securely and streamline multi-provider care." },
-                { title: "Local & Multi-Lingual", text: "Optimized for regional accents and multiple languages." }
-              ].map((item, i) => (
-                <motion.div 
-                  key={i}
-                  className="card p-6 text-left space-y-2"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <h4 className="font-bold text-slate-900 dark:text-white">{item.title}</h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{item.text}</p>
-                </motion.div>
+        {/* How it works — numbered, no icon cards */}
+        <section className="border-b border-stone-200 dark:border-slate-800">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-10">
+              How it works
+            </h2>
+            <ol className="grid md:grid-cols-3 gap-8">
+              {steps.map((step) => (
+                <li key={step.n} className="space-y-3">
+                  <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
+                    {step.n}
+                  </span>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {step.body}
+                  </p>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
         </section>
 
-        {/* Differentiators Section */}
-        <section className="py-16 px-4 bg-slate-50 dark:bg-slate-900">
-          <div className="max-w-6xl mx-auto text-center space-y-12">
-            <h3 className="text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-10">
-              Why Doxia is built differently
-            </h3>
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { title: 'Specialty-Specific Templates', body: 'Go beyond SOAP. Create and use custom templates for DAP, BIRP, or any clinical letterhead format you prefer.' },
-                { title: 'Clinical Team Sync', body: 'Securely collaborate with assistants and other providers. Assign tasks and share finalized reports in one click.' },
-                { title: 'Edge-AI Speed', body: 'No waiting. Our local processing and edge-computing ensure your report is ready seconds after you stop recording.' },
-              ].map((item, idx) => (
-                <motion.div
-                  key={item.title}
-                  className="card p-8 shadow-lg hover:-translate-y-1 transition-transform text-left border-slate-200/60 dark:border-slate-800/60"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{ duration: 0.45, ease: 'easeOut', delay: idx * 0.08 }}
-                >
-                  <h4 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-3">{item.title}</h4>
-                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{item.body}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section className="py-24 px-4 bg-white dark:bg-slate-950">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-16">
-              <div className="pill w-fit mx-auto mb-4">Security & Trust</div>
-              <h3 className="text-4xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                Common Questions
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400">
-                Everything you need to know about Doxia&apos;s security, privacy, and workflow.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                {
-                  q: "How does Doxia handle patient privacy?",
-                  a: "Doxia is built with a privacy-first architecture. Audio is processed in real-time and never persisted to disk. We apply PII scrubbing before storing any transcript data. We are actively working toward formal HIPAA compliance and BAA agreements.",
-                },
-                {
-                  q: "Is Doxia HIPAA compliant?",
-                  a: "We are building toward HIPAA compliance but have not yet completed a formal audit or signed BAAs. During this beta period, we recommend not using Doxia with real patient data in a clinical setting. We will clearly announce when formal compliance is achieved.",
-                },
-                {
-                  q: "Does Doxia share my data with anyone?",
-                  a: "Never. Your data is yours. We do not sell, trade, or share clinician or patient data with third parties for marketing or any other purposes. Data is only used to generate your specific reports.",
-                },
-                {
-                  q: "Do you encrypt data at rest?",
-                  a: "We are implementing encryption at rest and TLS in transit. During beta, data is stored in a standard PostgreSQL database. We will add full AES-256 encryption before general availability.",
-                },
-                {
-                  q: "What happens to my data if I delete my account?",
-                  a: "If you delete your account, all associated data is permanently purged from our databases.",
-                },
-                {
-                  q: "Is Doxia free?",
-                  a: "Doxia is free during the beta period. We may introduce paid plans in the future, but early beta users will always be taken care of.",
-                },
-                {
-                  q: "What if I have a security concern?",
-                  a: "We take security reports seriously. You can reach our team directly via the support link in your dashboard for immediate assistance and disclosure.",
-                },
-              ].map((item, idx) => (
-                <details
-                  key={idx}
-                  className="group card overflow-hidden border-slate-200/60 dark:border-slate-800/60 transition-all duration-300"
-                >
-                  <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
-                    <span className="text-lg font-semibold text-slate-800 dark:text-slate-100 pr-4">
-                      {item.q}
-                    </span>
-                    <div className="relative flex-shrink-0 w-6 h-6 transition-transform duration-300 group-open:rotate-180">
-                      <span className="absolute inset-0 m-auto w-4 h-0.5 bg-slate-400 rounded-full" />
-                      <span className="absolute inset-0 m-auto h-4 w-0.5 bg-slate-400 rounded-full group-open:opacity-0 transition-opacity" />
-                    </div>
-                  </summary>
-                  <div className="px-6 pb-6 text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-50 dark:border-slate-800/50 pt-4">
-                    {item.a}
-                  </div>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Final Recap CTA */}
-        <section className="py-16 px-4 bg-gradient-to-r from-[#0052CC] to-indigo-600 text-white">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <h3 className="text-3xl md:text-4xl font-semibold">Less paperwork, more patients.</h3>
-            <p className="text-lg text-white/80">
-              Ambient listening, instant SOAP, privacy-first architecture, and copy-paste EHR flow. Free during beta.
+        {/* Problem — single column, no pills */}
+        <section className="border-b border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-4">
+              The documentation burden
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+              Many clinicians spend as much time on notes as on visits. Doxia is
+              built to cut that ratio: capture the conversation, generate a
+              draft you control, and move on. Team sharing and in-EHR push are
+              on the roadmap; copy-paste works today.
             </p>
+            <ul className="mt-8 grid sm:grid-cols-2 gap-4 text-sm">
+              {[
+                { title: "Ambient listening", text: "Hands on the patient, not the keyboard." },
+                { title: "Your templates", text: "SOAP, DAP, BIRP, or custom formats." },
+                { title: "Diarization", text: "Speaker labels when multiple voices are present." },
+                { title: "Honest beta scope", text: "We label what is live vs. roadmap on Features." },
+              ].map((item) => (
+                <li
+                  key={item.title}
+                  className="p-4 border border-stone-200 dark:border-slate-800 bg-[#fafaf9] dark:bg-slate-950"
+                >
+                  <p className="font-semibold text-slate-900 dark:text-white">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-slate-600 dark:text-slate-400">
+                    {item.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* FAQ — minimal */}
+        <section className="border-b border-stone-200 dark:border-slate-800">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-8">
+              Questions clinicians ask
+            </h2>
+            <dl className="divide-y divide-stone-200 dark:divide-slate-800">
+              {faqs.map((item) => (
+                <div key={item.q} className="py-6 first:pt-0">
+                  <dt className="font-semibold text-slate-900 dark:text-white">
+                    {item.q}
+                  </dt>
+                  <dd className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {item.a}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* CTA — flat, no gradient band */}
+        <section className="bg-[#0052CC] text-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-semibold">
+                Try Doxia on your next de-identified encounter.
+              </h2>
+              <p className="mt-2 text-white/80 text-sm max-w-md">
+                Free during beta. You land in Live Scribe immediately after
+                signup.
+              </p>
+            </div>
             <Link
               href="/signup"
-              className="bg-white text-slate-900 px-10 py-4 rounded-full text-xl font-semibold hover:bg-slate-100 transition-colors shadow-2xl inline-block"
+              className="inline-flex shrink-0 items-center justify-center bg-white text-[#0052CC] px-6 py-3 text-sm font-semibold hover:bg-stone-100 transition-colors"
             >
-              Join the Beta
+              Create free account
             </Link>
-            <p className="text-sm text-white/70">No credit card required. Early access slots are limited.</p>
           </div>
         </section>
       </main>
       <Footer />
     </>
-  )
+  );
 }

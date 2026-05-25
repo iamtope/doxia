@@ -10,7 +10,19 @@ export default function Footer() {
             AI medical scribe
           </span>
         </div>
-        <div className="flex gap-6 text-sm">
+        <div className="flex flex-wrap justify-center gap-6 text-sm">
+          <Link
+            href="/features"
+            className="text-slate-600 dark:text-slate-400 hover:text-[#0052CC] transition-colors"
+          >
+            Features
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-slate-600 dark:text-slate-400 hover:text-[#0052CC] transition-colors"
+          >
+            Beta &amp; Limits
+          </Link>
           <Link
             href="/privacy"
             className="text-slate-600 dark:text-slate-400 hover:text-[#0052CC] transition-colors"
