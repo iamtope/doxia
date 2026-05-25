@@ -5,7 +5,8 @@
 1. Create an OAuth 2.0 **Web application** client.
 2. **Authorized redirect URIs** (must match exactly):
    - Local: `http://localhost:3003/auth/google/callback`
-   - Production: `https://<your-gateway-host>/auth/google/callback`
+   - Production: `https://doxia-gateway.fly.dev/auth/google/callback` (gateway, **not** the Vercel app URL)
+   - Optional fallback: `https://doxia-red.vercel.app/auth/google/callback` (Next.js forwards to the gateway)
 3. Copy **Client ID** and **Client secret**.
 
 ## Environment variables

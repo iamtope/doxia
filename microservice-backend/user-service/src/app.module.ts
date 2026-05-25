@@ -8,6 +8,7 @@ import { GoogleAuthService } from './google-auth.service';
 import { User } from './user.entity';
 import { Note } from './note.entity';
 import { RabbitMQModule } from './rabbitmq.module';
+import { rabbitEnabled } from './rabbitmq-enabled';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { RabbitMQModule } from './rabbitmq.module';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
-    RabbitMQModule,
+    ...(rabbitEnabled() ? [RabbitMQModule] : []),
   ],
   controllers: [AppController],
   providers: [AppService, GoogleAuthService],

@@ -333,8 +333,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f" [Redis] Failed to connect to Redis: {e}")
 
-    # Startup: Start RabbitMQ consumer
-    rmq_conn = await start_rabbitmq_consumer()
+    rmq_conn = None
+    if settings.rabbitmq_enabled:
+        rmq_conn = await start_rabbitmq_consumer()
+    else:
+        logger.info(" [RMQ] Consumer disabled (set RABBITMQ_ENABLED=true with a broker URL to enable)")
     yield
     # Shutdown: Close connections
     if rmq_conn:

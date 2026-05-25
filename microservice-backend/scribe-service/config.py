@@ -1,7 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    rabbitmq_url: str
+    rabbitmq_enabled: bool = False
+    rabbitmq_url: str = "amqp://localhost:5672"
     redis_url: str = "redis://redis:6379/0"
     openai_api_key: str
     ai_model_version: str = "gpt-4o"

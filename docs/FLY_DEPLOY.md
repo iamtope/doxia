@@ -57,13 +57,13 @@ Set via `fly secrets set KEY=value -a <app>`. Use the same Postgres as `doxia-us
 
 - `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`
 - `JWT_SECRET`
-- `RABBITMQ_URL` (if used)
+- Do **not** set `RABBITMQ_URL` or `RABBITMQ_ENABLED` on Fly (no broker in this stack yet; avoids reconnect errors)
 - `CORS_ORIGINS`
 - `TYPEORM_SYNC` — omit or `true` (default: auto-sync schema on boot). Set `false` only when you add migrations.
 
 ### `doxia-scribe`
 
-- `RABBITMQ_URL`, `REDIS_URL`
+- `REDIS_URL` (required for session memory). `RABBITMQ_ENABLED` / `RABBITMQ_URL` only if you add a cloud AMQP broker
 - `OPENAI_API_KEY`
 - `CORS_ORIGINS`
 

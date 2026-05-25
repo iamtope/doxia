@@ -34,6 +34,7 @@ services:
       DB_NAME: doxxia_users
       JWT_SECRET: ${JWT_SECRET}
       TYPEORM_SYNC: "true"
+      RABBITMQ_ENABLED: "true"
       RABBITMQ_URL: amqp://rabbitmq:5672
       CORS_ORIGINS: "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001"
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -111,6 +112,7 @@ services:
       - rabbitmq
       - redis
     environment:
+      RABBITMQ_ENABLED: "true"
       RABBITMQ_URL: amqp://rabbitmq:5672
       REDIS_URL: redis://redis:6379/0
       OPENAI_API_KEY: ${OPENAI_API_KEY}

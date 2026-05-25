@@ -1,4 +1,11 @@
-import { Injectable, ConflictException, UnauthorizedException, NotFoundException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  NotFoundException,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -15,8 +22,17 @@ export class AppService {
     @InjectRepository(Note)
     private noteRepository: Repository<Note>,
     private jwtService: JwtService,
-    @Inject('RABBIT_SERVICE') private readonly client: ClientProxy,
+    @Optional() @Inject('RABBIT_SERVICE') private readonly client: ClientProxy | null,
   ) {}
+
+  private emitUserCreated(user: { id: number; email: string; fullName: string }) {
+    if (!this.client) return;
+    this.client.emit('user_created', {
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+    });
+  }
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
@@ -72,11 +88,7 @@ export class AppService {
       });
       user = await this.userRepository.save(newUser);
 
-      this.client.emit('user_created', {
-        userId: user.id,
-        email: user.email,
-        fullName: user.fullName,
-      });
+      this.emitUserCreated(user);
     }
 
     return this.issueAuthResponse(user);
@@ -105,12 +117,7 @@ export class AppService {
 
     const saved = await this.userRepository.save(user);
 
-    // Emit event for other services (e.g., Scribe Service)
-    this.client.emit('user_created', {
-      userId: saved.id,
-      email: saved.email,
-      fullName: saved.fullName,
-    });
+    this.emitUserCreated(saved);
 
     return this.issueAuthResponse(saved);
   }
