@@ -1,0 +1,106 @@
+
+name: Fly Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "microservice-backend/api-gateway/**"
+      - "microservice-backend/user-service/**"
+      - "microservice-backend/scribe-service/**"
+      - "microservice-backend/ehr-service/**"
+      - ".github/workflows/fly-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: fly-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      gateway: ${{ steps.filter.outputs.gateway }}
+      user: ${{ steps.filter.outputs.user }}
+      scribe: ${{ steps.filter.outputs.scribe }}
+      ehr: ${{ steps.filter.outputs.ehr }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            gateway:
+              - 'microservice-backend/api-gateway/**'
+            user:
+              - 'microservice-backend/user-service/**'
+            scribe:
+              - 'microservice-backend/scribe-service/**'
+            ehr:
+              - 'microservice-backend/ehr-service/**'
+
+  deploy-gateway:
+    name: Deploy doxia-gateway
+    needs: changes
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.gateway == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy api-gateway
+        working-directory: microservice-backend/api-gateway
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-user:
+    name: Deploy doxia-user
+    needs: changes
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.user == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy user-service
+        working-directory: microservice-backend/user-service
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-scribe:
+    name: Deploy doxia-scribe
+    needs: changes
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.scribe == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy scribe-service
+        working-directory: microservice-backend/scribe-service
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-ehr:
+    name: Deploy doxia-ehr
+    needs: changes
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.ehr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy ehr-service
+        working-directory: microservice-backend/ehr-service
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
