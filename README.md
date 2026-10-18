@@ -58,6 +58,10 @@ Open http://localhost:3000.
 - Frontend: Vercel — see [DEPLOY.md](DEPLOY.md).
 - Backend services: Fly.io, auto-deployed from `main` by GitHub Actions — see [docs/FLY_DEPLOY.md](docs/FLY_DEPLOY.md).
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for what has shipped and what's next.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please keep PRs scoped to a single change and describe how to test it.
