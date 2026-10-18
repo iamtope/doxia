@@ -46,3 +46,10 @@ venv/
 # docker/db
 postgres_data/
 **/postgres_data/
+
+# build output
+**/dist/
+*.tsbuildinfo
+
+# internal docs
+docs/INVESTOR_DEMO.md

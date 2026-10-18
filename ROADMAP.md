@@ -25,6 +25,7 @@ Doxia is in **free beta**. This page tracks what has shipped and what comes next
 
 ### Oct 2026: Open source
 - README and MIT license
+- Repo cleanup: build output (`dist/`, `venv/`, `*.tsbuildinfo`) no longer tracked
 
 ## Current feature status
 
@@ -42,7 +43,6 @@ Doxia is in **free beta**. This page tracks what has shipped and what comes next
 ## Up next
 
 ### Now
-- **Repo cleanup:** stop tracking build output (`dist/`, `venv/`, `*.tsbuildinfo`) and fix `.gitignore`
 - **Tests:** unit tests for note generation and auth, and an e2e test for the record → note → save flow
 - **Database migrations:** replace TypeORM auto-sync (`TYPEORM_SYNC`) with versioned migrations
 
