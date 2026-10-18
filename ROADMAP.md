@@ -23,10 +23,6 @@ Doxia is in **free beta**. This page tracks what has shipped and what comes next
 - Redesigned home screen and Features page with live / beta / roadmap labels
 - Backend on Fly.io with GitHub Actions deploys; frontend on Vercel
 
-### Oct 2026: Open source
-- README and MIT license
-- Repo cleanup: build output (`dist/`, `venv/`, `*.tsbuildinfo`) no longer tracked
-
 ## Current feature status
 
 | Feature | Status |
@@ -46,15 +42,24 @@ Doxia is in **free beta**. This page tracks what has shipped and what comes next
 - **Tests:** unit tests for note generation and auth, and an e2e test for the record → note → save flow
 - **Database migrations:** replace TypeORM auto-sync (`TYPEORM_SYNC`) with versioned migrations
 
+- **Edit by voice:** dictate changes to a draft note ("add ibuprofen 400 mg to the plan")
+
 ### Next
 - **Direct EHR push:** send a finished note from the scribe straight to Epic / Cerner (now: copy to clipboard)
-- **Custom templates out of beta:** template builder polish and template sharing
-- **Multi-language out of beta:** wider language coverage and accuracy checks
+- **Pre-charting from the EHR:** pull problems, medications, and allergies over FHIR before the visit so notes start with context
+- **Custom templates out of beta:** template builder polish, plus a shared library of specialty templates (psychiatry, pediatrics, physiotherapy, dermatology)
+- **Multi-language out of beta:** wider language coverage, and notes in English from visits held in another language
+- **Coding suggestions:** ICD-10 and CPT suggestions with the transcript evidence for each code
+- **More EHRs:** athenahealth, eClinicalWorks, and other SMART on FHIR systems
 
 ### Later
+- **Patient after-visit summaries:** plain-language summaries and instructions in the patient's own language
+- **Referral and follow-up letters:** generated from the note in one click
+- **Mobile app:** record on a phone, with offline capture that uploads when back online
 - **Team collaboration:** share notes with a care team, assign tasks, and support multi-provider workflows
-- **HIPAA compliance:** BAAs, audit logging, and a security review
-- **Message broker in production:** a managed RabbitMQ (or equivalent) for async scribe jobs
+- **Clinic accounts:** organization admin, SSO (SAML / OIDC), seat billing, and usage analytics (time saved per clinician)
+- **On-device transcription:** process audio locally so it never leaves the clinic
+- **Compliance:** HIPAA BAAs, GDPR, audit logging, and SOC 2
 
 ## Contributing
 
